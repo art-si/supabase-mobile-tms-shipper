@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/auth'
 import { usePageTheme } from '@/composables/usePageTheme'
 import { isWorkspaceKey, workspace, workspaceUrl, type WorkspaceKey } from '@/utils/workspace'
 import TmsIcon from '@/components/business/TmsIcon.vue'
-import TmsPageSkeleton from '@/components/business/TmsPageSkeleton.vue'
+import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
 import TmsTopBar from '@/components/business/TmsTopBar.vue'
 
 const { themeName } = usePageTheme()

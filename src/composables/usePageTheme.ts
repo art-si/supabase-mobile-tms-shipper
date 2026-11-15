@@ -1,10 +1,5 @@
-import { computed } from 'vue'
+import { createUsePageTheme } from '@mobile-core/theme'
 import { useThemeStore } from '@/stores/theme'
 
-export function usePageTheme() {
-  const theme = useThemeStore()
-  return {
-    theme,
-    themeName: computed(() => `tms-${theme.preset}`)
-  }
-}
+// Shipper pages apply the preset class directly to their root view.
+export const usePageTheme = createUsePageTheme(useThemeStore, 'tms-theme')

@@ -9,7 +9,7 @@ import { isContactPhone, normalizeContact } from '@/utils/orders'
 import TmsAction from '@/components/business/TmsAction.vue'
 import TmsField from '@/components/business/TmsField.vue'
 import TmsIcon from '@/components/business/TmsIcon.vue'
-import TmsPageSkeleton from '@/components/business/TmsPageSkeleton.vue'
+import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
 import TmsTopBar from '@/components/business/TmsTopBar.vue'
 
 const { themeName } = usePageTheme()

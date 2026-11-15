@@ -6,8 +6,11 @@ onLaunch(() => useAuthStore().hydrate())
 </script>
 
 <style lang="scss">
-@use './styles/global.scss';
+@use '@mobile-core/styles/global.scss' as mobile;
 @use './styles/shipper.scss';
+
+@include mobile.apply('tms', 'TMS Icons', '~@/static/icons/tms-icons.ttf');
+@include shipper.apply();
 
 page {
   min-height: 100%;

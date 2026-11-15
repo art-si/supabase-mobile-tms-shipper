@@ -11,7 +11,7 @@ import TmsAction from '@/components/business/TmsAction.vue'
 import TmsIcon from '@/components/business/TmsIcon.vue'
 import TmsMetricGrid from '@/components/business/TmsMetricGrid.vue'
 import TmsOrderCard from '@/components/business/TmsOrderCard.vue'
-import TmsPageSkeleton from '@/components/business/TmsPageSkeleton.vue'
+import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
 
 const { themeName } = usePageTheme()
 const { auth, dashboard, demo } = useShipper()

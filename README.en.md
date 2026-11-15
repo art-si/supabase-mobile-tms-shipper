@@ -1,5 +1,7 @@
 # TMS Shipper
 
+The app uses the shared design system in supabase-mobile-pro. Build it from the main repository’s modules directory, or use MOBILE_PRO_ROOT to locate the matching main repository checkout.
+
 The mobile shipper workspace for Art Supabase TMS. Customers submit shipment requests, track their source transport orders and individual dispatch batches, and view delivery receipts. The TMS web app continues to handle load planning and dispatch.
 
 The app uses the driver app's Uni-app, Vue 3, TypeScript, Pinia, Wot Design Uni, themes, and complete set of repository skills. It builds for H5 and WeChat Mini Programs.

@@ -7,7 +7,7 @@ import { usePageTheme } from '@/composables/usePageTheme'
 import { useAuthStore } from '@/stores/auth'
 import { openWorkspace } from '@/utils/workspace'
 import TmsAction from '@/components/business/TmsAction.vue'
-import TmsPageSkeleton from '@/components/business/TmsPageSkeleton.vue'
+import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
 import TmsTopBar from '@/components/business/TmsTopBar.vue'
 
 const categories: Array<{ key: DriverLedgerKind; label: string; permission: string }> = [

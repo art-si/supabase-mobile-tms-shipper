@@ -2,7 +2,7 @@
 
 亿企工场 TMS 的货主移动端。货主提交发货委托，按原始运输单跟踪发运、到达、分批签收和回单。服务商在 Art Supabase TMS 中继续配载、派车和归档。
 
-项目骨架和界面沿用司机端的 Uni-app、Vue 3、TypeScript、Pinia、Wot Design Uni 及主题组件，支持 H5 和微信小程序。`.agents/skills` 和 `skills-lock.json` 原样来自司机端。
+项目使用 Uni-app、Vue 3、TypeScript、Pinia 和 Wot Design Uni，从主仓复用以司机端为基准的样式与主题组件，支持 H5 和微信小程序。`.agents/skills` 和 `skills-lock.json` 原样来自司机端。
 
 ## 功能
 
@@ -15,6 +15,8 @@
 | 我的 · 业务结算 | 货主查看本企业已确认的客户对账单和明细。员工可按司机核对运单费用、借款、还款和报销，按授权进入客户对账、承运商对账和运单费用工作台。 |
 
 ## 本地运行
+
+开发和构建使用 [supabase-mobile-pro](https://gitee.com/art-si/supabase-mobile-pro) 的公共样式。可在主仓的 `modules/` 中开发。单独检出时，在同一级放好对应版本的主仓，或用 `MOBILE_PRO_ROOT` 指向主仓目录。
 
 使用 Node.js 22 或更高版本及 pnpm 11。
 

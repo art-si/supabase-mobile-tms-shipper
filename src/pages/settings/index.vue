@@ -2,7 +2,7 @@
 import { onShow } from '@dcloudio/uni-app'
 import { usePageTheme } from '@/composables/usePageTheme'
 import { useAuthStore } from '@/stores/auth'
-import { THEME_PRESETS, type ThemePresetId } from '@/stores/theme'
+import { THEME_PRESETS, type ThemePresetId } from '@mobile-core/theme'
 import TmsTopBar from '@/components/business/TmsTopBar.vue'
 import TmsIcon from '@/components/business/TmsIcon.vue'
 

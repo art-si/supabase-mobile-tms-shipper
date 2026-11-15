@@ -9,7 +9,7 @@ import { usePageResource, useShipper } from '@/composables/useShipper'
 import TmsField from '@/components/business/TmsField.vue'
 import TmsAction from '@/components/business/TmsAction.vue'
 import TmsIcon from '@/components/business/TmsIcon.vue'
-import TmsPageSkeleton from '@/components/business/TmsPageSkeleton.vue'
+import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
 import TmsSelect from '@/components/business/TmsSelect.vue'
 import TmsTopBar from '@/components/business/TmsTopBar.vue'
 

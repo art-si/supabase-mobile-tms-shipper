@@ -8,9 +8,9 @@
     "dev:mp-weixin": "uni -p mp-weixin",
     "build:h5": "uni build -p h5",
     "build:mp-weixin": "uni build -p mp-weixin",
-    "typecheck": "vue-tsc --noEmit --pretty false",
+    "typecheck": "node scripts/mobile-pro.mjs && vue-tsc --noEmit --pretty false",
     "icons:build": "node scripts/build-icons.mjs",
-    "font:css": "node scripts/build-ui-font-css.mjs",
+    "font:css": "node scripts/mobile-pro.mjs font:css",
     "audit:h5": "node scripts/smoke-h5.mjs"
   },
   "dependencies": {

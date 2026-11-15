@@ -12,7 +12,7 @@ import TmsBottomNav from '@/components/business/TmsBottomNav.vue'
 import TmsDispatchWorkbench from '@/components/business/TmsDispatchWorkbench.vue'
 import TmsIcon from '@/components/business/TmsIcon.vue'
 import TmsOrderCard from '@/components/business/TmsOrderCard.vue'
-import TmsPageSkeleton from '@/components/business/TmsPageSkeleton.vue'
+import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
 import TmsTopBar from '@/components/business/TmsTopBar.vue'
 
 const { themeName } = usePageTheme()

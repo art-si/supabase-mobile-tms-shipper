@@ -7,7 +7,7 @@ import { useAuthStore } from '@/stores/auth'
 import { openWorkspace } from '@/utils/workspace'
 import TmsAction from './TmsAction.vue'
 import TmsIcon from './TmsIcon.vue'
-import TmsPageSkeleton from './TmsPageSkeleton.vue'
+import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
 import TmsStatusTag from './TmsStatusTag.vue'
 
 const auth = useAuthStore()

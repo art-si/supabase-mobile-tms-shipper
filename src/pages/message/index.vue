@@ -11,7 +11,7 @@ import { workspaceUrl } from '@/utils/workspace'
 import TmsAction from '@/components/business/TmsAction.vue'
 import TmsBottomNav from '@/components/business/TmsBottomNav.vue'
 import TmsIcon from '@/components/business/TmsIcon.vue'
-import TmsPageSkeleton from '@/components/business/TmsPageSkeleton.vue'
+import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
 import TmsTopBar from '@/components/business/TmsTopBar.vue'
 
 type Message = { id: string; title: string; content: string; createdAt: string; isRead: boolean } &

@@ -7,7 +7,7 @@ import { MASTER_DATA, SETTLEMENT, openWorkspace, workspace, type WorkspaceKey } 
 import TmsAction from '@/components/business/TmsAction.vue'
 import TmsBottomNav from '@/components/business/TmsBottomNav.vue'
 import TmsIcon from '@/components/business/TmsIcon.vue'
-import TmsPageSkeleton from '@/components/business/TmsPageSkeleton.vue'
+import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
 import TmsTopBar from '@/components/business/TmsTopBar.vue'
 
 const { themeName } = usePageTheme()

@@ -7,7 +7,7 @@ import { usePageTheme } from '@/composables/usePageTheme'
 import { usePageResource, useShipper } from '@/composables/useShipper'
 import TmsAction from '@/components/business/TmsAction.vue'
 import TmsIcon from '@/components/business/TmsIcon.vue'
-import TmsPageSkeleton from '@/components/business/TmsPageSkeleton.vue'
+import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
 import TmsTopBar from '@/components/business/TmsTopBar.vue'
 
 const { themeName } = usePageTheme()

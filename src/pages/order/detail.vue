@@ -8,7 +8,7 @@ import { usePageResource, useShipper } from '@/composables/useShipper'
 import { formatTime, openOrders } from '@/utils/orders'
 import TmsIcon from '@/components/business/TmsIcon.vue'
 import TmsAction from '@/components/business/TmsAction.vue'
-import TmsPageSkeleton from '@/components/business/TmsPageSkeleton.vue'
+import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
 import TmsStatusTag from '@/components/business/TmsStatusTag.vue'
 import TmsTopBar from '@/components/business/TmsTopBar.vue'
 
