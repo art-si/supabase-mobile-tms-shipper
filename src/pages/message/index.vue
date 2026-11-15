@@ -12,7 +12,7 @@ import TmsAction from '@/components/business/TmsAction.vue'
 import TmsBottomNav from '@/components/business/TmsBottomNav.vue'
 import TmsIcon from '@/components/business/TmsIcon.vue'
 import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
-import TmsTopBar from '@/components/business/TmsTopBar.vue'
+import MobileTopBar from '@mobile-core/components/MobileTopBar.vue'
 
 type Message = { id: string; title: string; content: string; createdAt: string; isRead: boolean } &
   ({ order: OrderUpdate } | { staff: StaffMessage })
@@ -72,7 +72,7 @@ async function choose(item: Message) {
 
 <template>
   <view class="page shipper-page" :class="themeName">
-    <TmsTopBar title="消息" :eyebrow="demo ? '演示模式' : undefined" />
+    <MobileTopBar capsule="always" title="消息" :eyebrow="demo ? '演示模式' : undefined" />
     <view class="shipper-content shipper-content--tabbed" role="main">
       <template v-if="selected">
         <view class="card shipper-card shipper-stack">

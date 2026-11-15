@@ -10,7 +10,7 @@ import TmsAction from '@/components/business/TmsAction.vue'
 import TmsField from '@/components/business/TmsField.vue'
 import TmsIcon from '@/components/business/TmsIcon.vue'
 import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
-import TmsTopBar from '@/components/business/TmsTopBar.vue'
+import MobileTopBar from '@mobile-core/components/MobileTopBar.vue'
 
 const { themeName } = usePageTheme()
 const { auth, demo, savedItems, saveItem, deleteItem } = useShipper()
@@ -96,7 +96,7 @@ function remove(item: SavedItem) {
 
 <template>
   <view class="page shipper-page" :class="themeName">
-    <TmsTopBar :title="title" :eyebrow="demo ? '演示模式' : undefined" show-back />
+    <MobileTopBar capsule="always" :title="title" :eyebrow="demo ? '演示模式' : undefined" show-back />
     <view class="shipper-content" role="main">
       <text v-if="auth.staff" class="shipper-copy">请从「我的」打开所属业务工作台。</text>
       <template v-else>

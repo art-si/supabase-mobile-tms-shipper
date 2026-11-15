@@ -11,7 +11,7 @@ import TmsAction from '@/components/business/TmsAction.vue'
 import TmsIcon from '@/components/business/TmsIcon.vue'
 import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
 import TmsSelect from '@/components/business/TmsSelect.vue'
-import TmsTopBar from '@/components/business/TmsTopBar.vue'
+import MobileTopBar from '@mobile-core/components/MobileTopBar.vue'
 
 const { themeName } = usePageTheme()
 const { auth, demo, stations, create, savedItems } = useShipper()
@@ -187,7 +187,7 @@ async function submit() {
 
 <template>
   <view class="page shipper-page" :class="themeName">
-    <TmsTopBar title="发货委托" :eyebrow="demo ? '演示模式' : undefined" show-back :confirm-back="confirmBack" />
+    <MobileTopBar capsule="always" title="发货委托" :eyebrow="demo ? '演示模式' : undefined" show-back :confirm-back="confirmBack" />
     <view v-if="auth.staff" class="shipper-content">
       <text class="shipper-copy">请从发货入口进入 Web TMS 开单。</text>
     </view>

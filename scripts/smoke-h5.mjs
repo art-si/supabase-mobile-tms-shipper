@@ -11,7 +11,15 @@ page.on('pageerror', (error) => errors.push(error.message))
 const text = (value) => page.getByText(value, { exact: true })
 const button = (value) => page.getByRole('button', { name: value, exact: true })
 const tab = (value) => page.getByRole('link', { name: value, exact: true })
-const field = (id) => page.locator(`#${id} input, #${id} textarea`)
+const fieldSelector = (id) => `#${id} input, #${id} textarea`
+const field = (id) => page.locator(fieldSelector(id))
+
+async function waitForFieldValue(id, value) {
+  await page.waitForFunction(
+    ({ selector, value }) => document.querySelector(selector)?.value === value,
+    { selector: fieldSelector(id), value },
+  )
+}
 
 async function noOverflow() {
   const dimensions = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth }))
@@ -21,7 +29,7 @@ async function noOverflow() {
 try {
   await mkdir('artifacts', { recursive: true })
   await page.goto(origin, { waitUntil: 'domcontentloaded' })
-  await text('登录 TMS 账号').waitFor()
+  await page.getByRole('form', { name: '货主端账号登录' }).waitFor()
   await page.screenshot({ path: 'artifacts/shipper-login.png' })
   await page.getByText('进入演示', { exact: false }).click()
   await text('订单概览').waitFor()
@@ -92,13 +100,19 @@ try {
   await text('请选择发货站点。').waitFor()
   await page.locator('#sender-station').selectOption({ label: '杭州临平站' })
   await page.locator('#receiver-station').selectOption({ label: '宁波北仑站' })
-  await page.getByRole('combobox', { name: '发货使用常用地址' }).selectOption({ label: '临平发货仓' })
-  assert.equal(await field('sender-name').inputValue(), '陈经理')
+  const senderAddress = page.getByRole('combobox', { name: '发货使用常用地址' })
+  await senderAddress.selectOption({ label: '临平发货仓' })
+  await waitForFieldValue('sender-name', '陈经理')
+  await waitForFieldValue('sender-phone', '18000000001')
+  await waitForFieldValue('sender-address', '临平区示例产业园 1 号仓')
+  await field('sender-name').fill('测试发货处')
+  await senderAddress.selectOption({ label: '临平发货仓' })
+  await waitForFieldValue('sender-name', '陈经理')
   await field('receiver-name').fill('测试收货处')
   await field('receiver-phone').fill('18000000003')
   await field('receiver-address').fill('测试物流园 3 号卸货口')
   await page.getByRole('combobox', { name: '选用常用货物' }).selectOption({ label: '测试托盘' })
-  assert.equal(await field('cargo-1-name').inputValue(), '测试托盘')
+  await waitForFieldValue('cargo-1-name', '测试托盘')
   await field('cargo-1-quantity').fill('10')
   await field('cargo-1-weightKg').fill('121.25')
   await text('提交发货委托').click()

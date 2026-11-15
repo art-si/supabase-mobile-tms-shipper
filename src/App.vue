@@ -9,7 +9,7 @@ onLaunch(() => useAuthStore().hydrate())
 @use '@mobile-core/styles/global.scss' as mobile;
 @use './styles/shipper.scss';
 
-@include mobile.apply('tms', 'TMS Icons', '~@/static/icons/tms-icons.ttf');
+@include mobile.apply('tms');
 @include shipper.apply();
 
 page {

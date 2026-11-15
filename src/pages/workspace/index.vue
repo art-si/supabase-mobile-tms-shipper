@@ -7,7 +7,7 @@ import { usePageTheme } from '@/composables/usePageTheme'
 import { isWorkspaceKey, workspace, workspaceUrl, type WorkspaceKey } from '@/utils/workspace'
 import TmsIcon from '@/components/business/TmsIcon.vue'
 import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
-import TmsTopBar from '@/components/business/TmsTopBar.vue'
+import MobileTopBar from '@mobile-core/components/MobileTopBar.vue'
 
 const { themeName } = usePageTheme()
 const auth = useAuthStore()
@@ -52,7 +52,7 @@ function embedFailed() {
   <web-view v-if="embedded && link" :src="link" @error="embedFailed" />
   <!-- #endif -->
   <view v-if="!embedded" class="page shipper-page" :class="themeName">
-    <TmsTopBar :title="entry?.title || '业务工作台'" :eyebrow="auth.demo ? '演示模式' : undefined" show-back />
+    <MobileTopBar capsule="always" :title="entry?.title || '业务工作台'" :eyebrow="auth.demo ? '演示模式' : undefined" show-back />
     <view class="shipper-content" role="main">
       <TmsPageSkeleton v-if="busy" label="正在核对业务权限…" />
       <view v-else-if="error" class="card shipper-empty">

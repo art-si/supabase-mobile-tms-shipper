@@ -1,8 +1,8 @@
-import type { TmsIconName } from '@/components/business/icon-glyphs'
+import type { MobileIconName } from '@mobile-core/icons'
 
 interface WorkspaceEntry {
   title: string
-  icon: TmsIconName
+  icon: MobileIconName
   path: string
   menu: string
   permission?: string

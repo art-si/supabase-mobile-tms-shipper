@@ -1,4 +1,5 @@
 import type { OrderFilter, OrderGroup, OrderStatus, ShipmentContact } from '@/api/types'
+import type { MobileStatusTone } from '@mobile-core/theme'
 
 export const ORDER_FILTERS: Array<{ value: OrderFilter; label: string }> = [
   { value: 'all', label: '全部' },
@@ -32,7 +33,7 @@ const BATCH_LABELS: Record<string, string> = {
   cancelled: '已取消'
 }
 
-const GROUP_TONES: Record<OrderGroup, string> = {
+const GROUP_TONES: Record<OrderGroup, MobileStatusTone> = {
   pending: 'orange',
   in_progress: 'blue',
   signed: 'green',
@@ -43,15 +44,16 @@ export function orderGroup(status: OrderStatus): OrderGroup {
   return ORDER_STATUS[status]?.group ?? 'pending'
 }
 
-export function statusAppearance(status: string, batch: boolean) {
+export function statusAppearance(status: string, batch: boolean): { label: string; tone: MobileStatusTone } {
   if (!batch) {
     const order = ORDER_STATUS[status as OrderStatus]
     return order ? { label: order.label, tone: GROUP_TONES[order.group] } : { label: '待同步', tone: 'gray' }
   }
-  if (status === 'signed' || status === 'completed') return { label: BATCH_LABELS[status], tone: 'green' }
-  if (status === 'cancelled') return { label: BATCH_LABELS[status], tone: 'gray' }
-  if (status === 'pending' || status === 'accepted') return { label: BATCH_LABELS[status], tone: 'orange' }
-  return { label: BATCH_LABELS[status] || '待同步', tone: 'blue' }
+  const label = BATCH_LABELS[status] || '待同步'
+  if (status === 'signed' || status === 'completed') return { label, tone: 'green' }
+  if (status === 'cancelled') return { label, tone: 'gray' }
+  if (status === 'pending' || status === 'accepted') return { label, tone: 'orange' }
+  return { label, tone: 'blue' }
 }
 
 export function formatTime(value: string | null, includeYear = false) {

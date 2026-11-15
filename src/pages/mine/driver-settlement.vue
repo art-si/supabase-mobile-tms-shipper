@@ -8,7 +8,7 @@ import { useAuthStore } from '@/stores/auth'
 import { openWorkspace } from '@/utils/workspace'
 import TmsAction from '@/components/business/TmsAction.vue'
 import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
-import TmsTopBar from '@/components/business/TmsTopBar.vue'
+import MobileTopBar from '@mobile-core/components/MobileTopBar.vue'
 
 const categories: Array<{ key: DriverLedgerKind; label: string; permission: string }> = [
   { key: 'waybill', label: '运单费用', permission: 'FinanceWaybillCost:View' },
@@ -82,7 +82,7 @@ function money(value: number | string | null) {
 
 <template>
   <view class="page shipper-page" :class="themeName">
-    <TmsTopBar title="司机对账" :eyebrow="auth.demo ? '演示模式' : undefined" show-back />
+    <MobileTopBar capsule="always" title="司机对账" :eyebrow="auth.demo ? '演示模式' : undefined" show-back />
     <view class="shipper-content" role="main">
       <template v-if="!driver">
         <view class="card shipper-card shipper-stack">

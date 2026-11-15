@@ -13,7 +13,7 @@ import TmsDispatchWorkbench from '@/components/business/TmsDispatchWorkbench.vue
 import TmsIcon from '@/components/business/TmsIcon.vue'
 import TmsOrderCard from '@/components/business/TmsOrderCard.vue'
 import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
-import TmsTopBar from '@/components/business/TmsTopBar.vue'
+import MobileTopBar from '@mobile-core/components/MobileTopBar.vue'
 
 const { themeName } = usePageTheme()
 const { auth, demo, list } = useShipper()
@@ -99,7 +99,7 @@ async function loadMore() {
 
 <template>
   <view class="page shipper-page" :class="themeName">
-    <TmsTopBar title="运单" :eyebrow="demo ? '演示模式' : undefined" />
+    <MobileTopBar capsule="always" title="运单" :eyebrow="demo ? '演示模式' : undefined" />
     <view class="shipper-content shipper-content--tabbed" role="main">
       <view v-if="actions.length" class="card shipper-card shipper-stack">
         <text class="section-title">调度工作台</text>

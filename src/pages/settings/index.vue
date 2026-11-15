@@ -3,7 +3,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { usePageTheme } from '@/composables/usePageTheme'
 import { useAuthStore } from '@/stores/auth'
 import { THEME_PRESETS, type ThemePresetId } from '@mobile-core/theme'
-import TmsTopBar from '@/components/business/TmsTopBar.vue'
+import MobileTopBar from '@mobile-core/components/MobileTopBar.vue'
 import TmsIcon from '@/components/business/TmsIcon.vue'
 
 const { theme, themeName } = usePageTheme()
@@ -17,7 +17,7 @@ function setPreset(preset: ThemePresetId) {
 
 <template>
   <view class="page shipper-page" :class="themeName">
-    <TmsTopBar title="界面设置" :eyebrow="auth.demo ? '演示模式' : undefined" show-back />
+    <MobileTopBar capsule="always" title="界面设置" :eyebrow="auth.demo ? '演示模式' : undefined" show-back />
     <view class="shipper-content" role="main">
       <view class="card shipper-card shipper-stack" role="group" aria-label="主题颜色">
         <text class="section-title" role="heading" aria-level="2">主题颜色</text>

@@ -10,7 +10,7 @@ import TmsIcon from '@/components/business/TmsIcon.vue'
 import TmsAction from '@/components/business/TmsAction.vue'
 import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
 import TmsStatusTag from '@/components/business/TmsStatusTag.vue'
-import TmsTopBar from '@/components/business/TmsTopBar.vue'
+import MobileTopBar from '@mobile-core/components/MobileTopBar.vue'
 
 const { themeName } = usePageTheme()
 const { auth, demo, detail } = useShipper()
@@ -60,7 +60,7 @@ function copyNumber(number: string) {
 
 <template>
   <view class="page shipper-page" :class="themeName">
-    <TmsTopBar title="订单详情" :eyebrow="demo ? '演示模式' : undefined" show-back />
+    <MobileTopBar capsule="always" title="订单详情" :eyebrow="demo ? '演示模式' : undefined" show-back />
     <view class="shipper-content" role="main">
       <template v-if="order">
         <view v-if="created" class="detail-success" role="status">

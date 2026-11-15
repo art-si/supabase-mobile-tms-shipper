@@ -8,7 +8,7 @@ import TmsAction from '@/components/business/TmsAction.vue'
 import TmsBottomNav from '@/components/business/TmsBottomNav.vue'
 import TmsIcon from '@/components/business/TmsIcon.vue'
 import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
-import TmsTopBar from '@/components/business/TmsTopBar.vue'
+import MobileTopBar from '@mobile-core/components/MobileTopBar.vue'
 
 const { themeName } = usePageTheme()
 const { auth, demo, profile } = useShipper()
@@ -50,7 +50,7 @@ function logout() {
 
 <template>
   <view class="page shipper-page" :class="themeName">
-    <TmsTopBar title="我的" :eyebrow="demo ? '演示模式' : undefined" />
+    <MobileTopBar capsule="always" title="我的" :eyebrow="demo ? '演示模式' : undefined" />
     <view class="shipper-content shipper-content--tabbed" role="main">
       <view v-if="data" class="card shipper-card shipper-stack">
         <view class="profile-identity">
