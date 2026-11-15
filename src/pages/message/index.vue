@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MobileWorkspace from '@mobile-core/components/MobileWorkspace.vue'
 import { computed, ref } from 'vue'
 import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
 import { fetchStaffMessages, readStaffMessage, type StaffMessage } from '@/api/staff'
@@ -8,7 +9,7 @@ import { usePageResource, useShipper } from '@/composables/useShipper'
 import { usePageTheme } from '@/composables/usePageTheme'
 import { formatTime, openOrder, statusAppearance } from '@/utils/orders'
 import { workspaceUrl } from '@/utils/workspace'
-import TmsAction from '@/components/business/TmsAction.vue'
+import TmsAction from '@mobile-core/components/MobileAction.vue'
 import TmsBottomNav from '@/components/business/TmsBottomNav.vue'
 import TmsIcon from '@/components/business/TmsIcon.vue'
 import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
@@ -71,7 +72,7 @@ async function choose(item: Message) {
 </script>
 
 <template>
-  <view class="page shipper-page" :class="themeName">
+  <MobileWorkspace class="page shipper-page" :class="themeName">
     <MobileTopBar capsule="always" title="消息" :eyebrow="demo ? '演示模式' : undefined" />
     <view class="shipper-content shipper-content--tabbed" role="main">
       <template v-if="selected">
@@ -80,7 +81,7 @@ async function choose(item: Message) {
             <text class="section-title">{{ selected.title }}</text>
             <TmsAction class="shipper-inline" @click="selected = undefined">返回列表</TmsAction>
           </view>
-          <text class="shipper-copy">{{ formatTime(selected.createdAt, true) }}</text>
+          <text class="message-time">{{ formatTime(selected.createdAt, true) }}</text>
           <text class="message-content">{{ selected.content || '暂无消息详情。' }}</text>
           <!-- #ifdef H5 -->
           <a v-if="staffLink" :href="staffLink" target="_blank" rel="noopener noreferrer" class="message-link">查看关联业务</a>
@@ -88,30 +89,32 @@ async function choose(item: Message) {
         </view>
       </template>
       <template v-else>
-        <view class="shipper-heading">
-          <text class="section-title">{{ auth.staff ? '通知与待办' : '运输动态' }}</text>
+        <view class="shipper-heading message-heading">
+          <text class="mobile-group-title" role="heading" aria-level="2">{{ auth.staff ? '通知与待办' : '运输动态' }}</text>
           <TmsAction class="shipper-inline" :aria-pressed="unreadOnly" @click="unreadOnly = !unreadOnly">
             {{ unreadOnly ? '显示全部' : `仅未读（${unread}）` }}
           </TmsAction>
         </view>
         <text v-if="actionError" class="shipper-error" role="alert">{{ actionError }}</text>
         <TmsPageSkeleton v-if="busy || error" compact label="正在加载消息…" :error="error" @retry="refresh" />
-        <template v-else-if="visible.length">
+        <view v-else-if="visible.length" class="mobile-group">
           <TmsAction
-            v-for="item in visible" :key="item.id" class="card shipper-card message-row"
+            v-for="item in visible" :key="item.id" class="mobile-row message-row"
             :disabled="marking" @click="choose(item)"
           >
-            <view class="message-row__icon"><TmsIcon name="message" size="35rpx" /></view>
-            <view class="message-row__copy">
-              <text class="message-row__title">{{ item.title }}</text>
-              <text v-if="item.content" class="shipper-copy message-row__content">{{ item.content }}</text>
-              <text class="shipper-copy">{{ formatTime(item.createdAt) }}</text>
+            <view class="mobile-row__icon"><TmsIcon name="message" size="18px" /></view>
+            <view class="mobile-row__body">
+              <text class="mobile-row__label">{{ item.title }}</text>
+              <text v-if="item.content" class="mobile-row__detail message-row__content">{{ item.content }}</text>
             </view>
-            <text v-if="!item.isRead" class="message-unread">未读</text>
-            <TmsIcon v-else name="arrow-right" size="25rpx" />
+            <view class="message-row__meta">
+              <text class="message-time">{{ formatTime(item.createdAt) }}</text>
+              <text v-if="!item.isRead" class="message-unread">未读</text>
+              <TmsIcon v-else class="mobile-row__chevron" name="arrow-right" size="14px" />
+            </view>
           </TmsAction>
-        </template>
-        <view v-else class="card shipper-empty">
+        </view>
+        <view v-else class="shipper-card shipper-empty">
           <view class="shipper-empty__icon"><TmsIcon name="message" size="44rpx" /></view>
           <text class="section-title">{{ unreadOnly ? '暂无未读消息' : '暂无消息' }}</text>
           <text v-if="!unreadOnly && !auth.staff" class="shipper-copy">订单有新进展时，可在这里查看。</text>
@@ -119,22 +122,20 @@ async function choose(item: Message) {
       </template>
     </view>
     <TmsBottomNav active="message" />
-  </view>
+  </MobileWorkspace>
 </template>
 
 <style scoped lang="scss">
-.message-row { display: flex; width: 100%; gap: 18rpx; align-items: flex-start; background: var(--tms-surface); }
-.message-row__icon {
-  width: 70rpx; height: 70rpx; color: var(--tms-primary); background: var(--tms-primary-soft);
-  flex: none; display: grid; place-items: center; border-radius: 19rpx;
-}
-.message-row__copy { display: grid; gap: 7rpx; flex: 1; min-width: 0; }
-.message-row__title { color: var(--tms-text); font-size: max(28rpx, 14px); font-weight: 700; overflow-wrap: anywhere; }
+.message-heading { margin-bottom: -7px; }
+.message-heading .mobile-group-title { margin-block: 0; }
+.message-row { min-height: 68px; }
 .message-row__content { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.message-row__meta { flex: none; display: grid; justify-items: end; gap: 5px; }
+.message-time { color: var(--mobile-workspace-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 .message-unread {
-  color: #92400e; background: var(--tms-orange-soft); padding: 4rpx 12rpx;
-  border-radius: 999rpx; font-size: max(22rpx, 12px); white-space: nowrap;
+  color: var(--tms-primary-strong); background: var(--tms-primary-soft); padding: 2px 7px;
+  border-radius: 999px; font-size: 12px; font-weight: 650; white-space: nowrap;
 }
 .message-content { color: var(--tms-text); white-space: pre-wrap; overflow-wrap: anywhere; }
-.message-link { color: var(--tms-primary); font-weight: 650; }
+.message-link { min-height: 44px; color: var(--tms-primary); font-weight: 650; display: flex; align-items: center; }
 </style>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MobileWorkspace from '@mobile-core/components/MobileWorkspace.vue'
 import { computed, reactive, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import type { SavedItem, SavedItemKind, ShipmentContact } from '@/api/types'
@@ -6,8 +7,8 @@ import { userMessage } from '@/api/supabase'
 import { usePageTheme } from '@/composables/usePageTheme'
 import { usePageResource, useShipper } from '@/composables/useShipper'
 import { isContactPhone, normalizeContact } from '@/utils/orders'
-import TmsAction from '@/components/business/TmsAction.vue'
-import TmsField from '@/components/business/TmsField.vue'
+import MobileAction from '@mobile-core/components/MobileAction.vue'
+import MobileField from '@mobile-core/components/MobileField.vue'
 import TmsIcon from '@/components/business/TmsIcon.vue'
 import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
 import MobileTopBar from '@mobile-core/components/MobileTopBar.vue'
@@ -95,7 +96,7 @@ function remove(item: SavedItem) {
 </script>
 
 <template>
-  <view class="page shipper-page" :class="themeName">
+  <MobileWorkspace class="page shipper-page" :class="themeName">
     <MobileTopBar capsule="always" :title="title" :eyebrow="demo ? '演示模式' : undefined" show-back />
     <view class="shipper-content" role="main">
       <text v-if="auth.staff" class="shipper-copy">请从「我的」打开所属业务工作台。</text>
@@ -103,39 +104,45 @@ function remove(item: SavedItem) {
         <view v-if="editing" class="card shipper-card shipper-stack">
           <view class="shipper-heading">
             <text class="section-title">{{ id ? '编辑' : '新增' }}{{ isAddress ? '地址' : '货物' }}</text>
-            <TmsAction class="shipper-inline" :disabled="saving" @click="editing = false">取消</TmsAction>
+            <MobileAction class="shipper-inline" :disabled="saving" @click="editing = false">取消</MobileAction>
           </view>
-          <TmsField
+          <MobileField
             v-model="itemTitle" field="saved-title" :label="isAddress ? '地址名称' : '货物名称'"
             :placeholder="isAddress ? '例如临平发货仓…' : '例如包装纸箱…'"
             :disabled="saving" :error="errors.title" required
           />
           <template v-if="isAddress">
-            <TmsField v-model="contact.name" field="saved-name" label="联系人" placeholder="姓名…" :maxlength="60" :disabled="saving" :error="errors.name" required />
-            <TmsField v-model="contact.phone" field="saved-phone" label="联系电话" inputmode="tel" placeholder="手机或座机…" :maxlength="24" :disabled="saving" :error="errors.phone" required />
-            <TmsField v-model="contact.address" field="saved-address" label="详细地址" placeholder="省市区、街道及门牌…" :maxlength="240" :disabled="saving" :error="errors.address" required />
+            <MobileField v-model="contact.name" field="saved-name" label="联系人" placeholder="姓名…" :maxlength="60" :disabled="saving" :error="errors.name" required />
+            <MobileField v-model="contact.phone" field="saved-phone" label="联系电话" inputmode="tel" placeholder="手机或座机…" :maxlength="24" :disabled="saving" :error="errors.phone" required />
+            <MobileField v-model="contact.address" field="saved-address" label="详细地址" placeholder="省市区、街道及门牌…" :maxlength="240" :disabled="saving" :error="errors.address" required />
           </template>
           <text v-if="actionError" class="shipper-error" role="alert">{{ actionError }}</text>
           <wd-button type="primary" block custom-class="tms-primary-action" :loading="saving" :disabled="saving" @click="save">保存</wd-button>
         </view>
         <TmsPageSkeleton v-else-if="busy || error" label="正在加载资料…" :error="error" @retry="refresh" />
         <template v-else>
-          <wd-button type="primary" block custom-class="tms-primary-action" :disabled="saving" @click="start()">
-            <TmsIcon name="add" size="30rpx" /> {{ isAddress ? '新增地址' : '新增货物' }}
-          </wd-button>
           <text v-if="actionError" class="shipper-error" role="alert">{{ actionError }}</text>
-          <view v-for="item in data" :key="item.id" class="card shipper-card shipper-stack saved-item">
-            <text class="section-title">{{ item.title }}</text>
-            <template v-if="item.contact">
-              <text class="shipper-copy">{{ item.contact.name }} · {{ item.contact.phone }}</text>
-              <text class="shipper-copy">{{ item.contact.address }}</text>
-            </template>
-            <view class="saved-actions">
-              <TmsAction class="shipper-inline" :disabled="saving" :aria-label="`编辑 ${item.title}`" @click="start(item)">编辑</TmsAction>
-              <TmsAction class="shipper-inline saved-delete" :disabled="saving" :aria-label="`删除 ${item.title}`" @click="remove(item)">删除</TmsAction>
+          <view class="mobile-group">
+            <MobileAction class="mobile-row saved-add" :disabled="saving" @click="start()">
+              <view class="mobile-row__icon"><TmsIcon name="add" size="18px" /></view>
+              <text>{{ isAddress ? '新增地址' : '新增货物' }}</text>
+            </MobileAction>
+            <view v-for="item in data" :key="item.id" class="mobile-row mobile-row--static saved-item">
+              <MobileAction class="saved-entry" :disabled="saving" :aria-label="`编辑 ${item.title}`" @click="start(item)">
+                <view class="mobile-row__icon"><TmsIcon :name="isAddress ? 'location' : 'box'" size="17px" /></view>
+                <view class="mobile-row__body">
+                  <text class="mobile-row__label">{{ item.title }}</text>
+                  <template v-if="item.contact">
+                    <text class="mobile-row__detail">{{ item.contact.name }} · {{ item.contact.phone }}</text>
+                    <text class="mobile-row__detail">{{ item.contact.address }}</text>
+                  </template>
+                </view>
+                <TmsIcon class="mobile-row__chevron" name="chevron" size="13px" />
+              </MobileAction>
+              <MobileAction class="saved-delete" :disabled="saving" :aria-label="`删除 ${item.title}`" @click="remove(item)">删除</MobileAction>
             </view>
           </view>
-          <view v-if="!data?.length" class="card shipper-empty">
+          <view v-if="!data?.length" class="shipper-empty">
             <view class="shipper-empty__icon"><TmsIcon :name="isAddress ? 'location' : 'box'" size="44rpx" /></view>
             <text class="section-title">暂无{{ title }}</text>
             <text class="shipper-copy">保存后可在发货时快速选用。</text>
@@ -143,11 +150,32 @@ function remove(item: SavedItem) {
         </template>
       </template>
     </view>
-  </view>
+  </MobileWorkspace>
 </template>
 
 <style scoped lang="scss">
-.saved-item { gap: 10rpx; }
-.saved-actions { display: flex; justify-content: flex-end; gap: 20rpx; }
-.saved-delete { color: #b42318; }
+.mobile-row.saved-add {
+  color: var(--mobile-workspace-accent);
+  font-size: 15px;
+  font-weight: 650;
+}
+.saved-item { gap: 8px; padding-block: 4px; }
+.saved-entry {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  align-items: center;
+  gap: 10px;
+  padding-block: 8px;
+}
+.saved-delete {
+  display: grid;
+  min-width: 44px;
+  min-height: 44px;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--tms-red-strong);
+  font-size: 13px;
+}
 </style>

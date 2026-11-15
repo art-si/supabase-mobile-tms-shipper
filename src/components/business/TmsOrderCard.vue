@@ -3,74 +3,72 @@ import type { OrderSummary } from '@/api/types'
 import { formatTime, openOrder } from '@/utils/orders'
 import TmsIcon from './TmsIcon.vue'
 import TmsStatusTag from './TmsStatusTag.vue'
-import TmsAction from './TmsAction.vue'
+import MobileAction from '@mobile-core/components/MobileAction.vue'
+import MobileRoute from '@mobile-core/components/MobileRoute.vue'
 
 defineProps<{ order: OrderSummary }>()
 </script>
 
 <template>
-  <TmsAction class="card shipper-card order-card" @click="openOrder(order.id)">
-    <view class="shipper-heading">
-      <text class="order-card__number">{{ order.orderNo }}</text>
+  <MobileAction class="card shipper-card order-card" @click="openOrder(order.id)">
+    <view class="shipper-heading order-card__header">
+      <text class="order-card__number" translate="no">{{ order.orderNo || '暂无订单号' }}</text>
       <TmsStatusTag :status="order.status" />
     </view>
     <view class="order-card__route">
-      <text>{{ order.origin }}</text>
-      <TmsIcon name="route-arrow" size="29rpx" />
-      <text>{{ order.destination }}</text>
+      <MobileRoute :origin="order.origin || '发货地待确认'" :destination="order.destination || '收货地待确认'" />
+      <TmsIcon class="order-card__chevron" name="chevron" size="24rpx" aria-hidden="true" />
     </view>
     <view class="order-card__foot">
-      <text class="shipper-copy">{{ order.cargoName }}<template v-if="order.cargoUnit"> · {{ order.cargoQuantity }} {{ order.cargoUnit }}</template></text>
+      <text class="shipper-copy order-card__cargo">{{ order.cargoName || '货物' }}<template v-if="order.cargoUnit"> · {{ order.cargoQuantity }} {{ order.cargoUnit }}</template></text>
       <text class="shipper-copy order-card__time">{{ formatTime(order.createdAt) }}</text>
-      <TmsIcon name="arrow-right" size="25rpx" />
     </view>
-  </TmsAction>
+  </MobileAction>
 </template>
 
 <style scoped lang="scss">
 .order-card {
   display: grid;
-  gap: 18rpx;
+  gap: 10px;
   width: 100%;
-  background: var(--tms-surface);
-  padding: 26rpx;
-  border: 1px solid var(--tms-line-subtle);
+  min-width: 0;
+  padding: 13px var(--mobile-workspace-card-padding);
+  background: var(--mobile-workspace-surface);
+  border: 1px solid var(--mobile-workspace-line);
+  border-radius: var(--mobile-workspace-card-radius);
+  box-shadow: none;
 }
+.order-card__header { align-items: start; }
 .order-card__number {
-  color: var(--tms-muted);
-  font-size: max(24rpx, 12px);
-  font-weight: 650;
+  padding-block: 3px;
+  color: var(--mobile-workspace-muted);
+  font-size: max(23rpx, 12px);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
 .order-card__route {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   min-width: 0;
-  gap: 16rpx;
-  color: var(--tms-text-strong);
-  font-size: max(31rpx, 16px);
-  font-weight: 750;
+  gap: 8px;
 }
-.order-card__route text {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.order-card__route .tms-icon { color: var(--tms-primary); }
+.order-card__chevron { flex: none; color: var(--mobile-workspace-muted); }
 .order-card__foot {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 14rpx;
+  justify-content: space-between;
+  gap: 2px 10px;
   min-width: 0;
-  color: var(--tms-muted);
+  padding-top: 8px;
+  border-top: 1px solid var(--mobile-workspace-line);
 }
-.order-card__foot text:first-child {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.order-card__cargo { min-width: 0; }
+.order-card__time { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+@media (hover: hover) {
+  .order-card:hover { border-color: var(--mobile-workspace-accent); }
 }
-.order-card__time { white-space: nowrap; }
 </style>

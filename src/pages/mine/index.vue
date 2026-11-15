@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import MobileWorkspace from '@mobile-core/components/MobileWorkspace.vue'
 import { computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { usePageTheme } from '@/composables/usePageTheme'
 import { usePageResource, useShipper } from '@/composables/useShipper'
 import { MASTER_DATA, SETTLEMENT, openWorkspace, workspace, type WorkspaceKey } from '@/utils/workspace'
-import TmsAction from '@/components/business/TmsAction.vue'
+import MobileAction from '@mobile-core/components/MobileAction.vue'
 import TmsBottomNav from '@/components/business/TmsBottomNav.vue'
 import TmsIcon from '@/components/business/TmsIcon.vue'
 import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
@@ -49,88 +50,82 @@ function logout() {
 </script>
 
 <template>
-  <view class="page shipper-page" :class="themeName">
+  <MobileWorkspace class="page shipper-page" :class="themeName">
     <MobileTopBar capsule="always" title="我的" :eyebrow="demo ? '演示模式' : undefined" />
     <view class="shipper-content shipper-content--tabbed" role="main">
-      <view v-if="data" class="card shipper-card shipper-stack">
-        <view class="profile-identity">
-          <view class="profile-icon"><TmsIcon name="user" size="50rpx" /></view>
-          <view class="profile-name">
-            <text class="section-title">{{ data.displayName }}</text>
-            <text class="shipper-copy">{{ auth.session?.user?.email || data.customerName }}</text>
+      <view v-if="data" class="mobile-group">
+        <view class="mobile-row mobile-row--static profile-identity">
+          <view class="mobile-row__icon profile-avatar"><TmsIcon name="user" size="22px" /></view>
+          <view class="mobile-row__body">
+            <text class="profile-name">{{ data.displayName }}</text>
+            <text v-if="auth.session?.user?.email || data.customerName" class="mobile-row__detail">
+              {{ auth.session?.user?.email || data.customerName }}
+            </text>
           </view>
         </view>
-        <view v-if="data.customerName" class="profile-row">
-          <text class="shipper-copy">所属客户</text><text>{{ data.customerName }}</text>
+        <view v-if="data.customerName" class="mobile-row mobile-row--static profile-fact">
+          <text class="mobile-row__detail">所属客户</text>
+          <text>{{ data.customerName }}</text>
         </view>
-        <view v-if="data.tenantName" class="profile-row">
-          <text class="shipper-copy">物流服务商</text><text>{{ data.tenantName }}</text>
+        <view v-if="data.tenantName" class="mobile-row mobile-row--static profile-fact">
+          <text class="mobile-row__detail">物流服务商</text>
+          <text>{{ data.tenantName }}</text>
         </view>
       </view>
       <TmsPageSkeleton v-else label="正在加载账号资料…" :error="error" @retry="refresh" />
-      <view v-for="group in groups" :key="group.title" class="card shipper-card shipper-stack profile-group">
-        <text class="section-title" role="heading" aria-level="2">{{ group.title }}</text>
-        <view class="profile-grid">
-          <TmsAction
-            v-for="key in group.keys" :key="key" class="profile-feature" @click="openFeature(key)"
+      <view v-for="group in groups" :key="group.title">
+        <text class="mobile-group-title" role="heading" aria-level="2">{{ group.title }}</text>
+        <view class="mobile-group">
+          <MobileAction
+            v-for="key in group.keys" :key="key" class="mobile-row profile-feature" @click="openFeature(key)"
           >
-            <view class="profile-feature__icon"><TmsIcon :name="workspace(key).icon" size="36rpx" /></view>
-            <text>{{ workspace(key).title }}</text>
-          </TmsAction>
+            <view class="mobile-row__icon"><TmsIcon :name="workspace(key).icon" size="17px" /></view>
+            <text class="mobile-row__body mobile-row__label">{{ workspace(key).title }}</text>
+            <TmsIcon class="mobile-row__chevron" name="chevron" size="14px" />
+          </MobileAction>
         </view>
       </view>
-      <TmsAction class="card shipper-card profile-settings" @click="settings">
-        <TmsIcon name="settings" size="38rpx" />
-        <text>界面设置</text>
-        <TmsIcon name="arrow-right" size="26rpx" />
-      </TmsAction>
-      <wd-button block custom-class="tms-secondary-action" @click="logout">{{ demo ? '退出演示' : '退出登录' }}</wd-button>
+      <view class="mobile-group">
+        <MobileAction class="mobile-row profile-settings" @click="settings">
+          <view class="mobile-row__icon"><TmsIcon name="settings" size="17px" /></view>
+          <text class="mobile-row__body mobile-row__label">界面设置</text>
+          <TmsIcon class="mobile-row__chevron" name="chevron" size="14px" />
+        </MobileAction>
+        <MobileAction class="mobile-row profile-signout" @click="logout">
+          {{ demo ? '退出演示' : '退出登录' }}
+        </MobileAction>
+      </view>
     </view>
     <TmsBottomNav active="mine" />
-  </view>
+  </MobileWorkspace>
 </template>
 
 <style scoped lang="scss">
-.profile-identity { display: flex; gap: 18rpx; align-items: center; }
-.profile-name { display: grid; min-width: 0; gap: 6rpx; overflow-wrap: anywhere; }
-.profile-icon {
-  display: grid;
-  place-items: center;
-  flex: 0 0 96rpx;
-  height: 96rpx;
-  border-radius: 28rpx;
-  color: var(--tms-primary);
-  background: var(--tms-primary-soft);
+.profile-identity { padding-block: 16px; }
+.profile-avatar {
+  width: 48px;
+  height: 48px;
+  flex-basis: 48px;
+  border-radius: 15px;
 }
-.profile-row {
-  display: grid;
-  grid-template-columns: 132rpx 1fr;
-  min-width: 0;
-  gap: 12rpx;
-  padding-top: 18rpx;
-  border-top: 1px solid var(--tms-line-subtle);
-  font-size: max(26rpx, 13px);
+.profile-name {
+  color: var(--mobile-workspace-ink);
+  font-size: 20px;
+  font-weight: 720;
+  line-height: 1.25;
   overflow-wrap: anywhere;
 }
-.profile-settings {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-  width: 100%;
-  min-height: var(--tms-control-height);
-  background: var(--tms-surface);
-  color: var(--tms-primary);
+.profile-fact {
+  display: grid;
+  grid-template-columns: minmax(80px, .45fr) minmax(0, 1fr);
+  font-size: 14px;
+  overflow-wrap: anywhere;
 }
-.profile-settings text { flex: 1; color: var(--tms-text); font-weight: 650; }
-.profile-group { gap: 20rpx; }
-.profile-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12rpx; }
-.profile-feature {
-  display: grid; justify-items: center; align-content: start; width: 100%; min-width: 0; min-height: 126rpx;
-  padding: 13rpx 6rpx; gap: 10rpx; text-align: center; border-radius: 19rpx; background: var(--tms-surface-soft);
-  color: var(--tms-text); font-size: max(24rpx, 12px); line-height: 1.4; font-weight: 650; overflow-wrap: anywhere;
-}
-.profile-feature__icon {
-  width: 59rpx; height: 59rpx; display: grid; place-items: center;
-  border-radius: 17rpx; color: var(--tms-primary); background: var(--tms-primary-soft);
+.profile-fact > text:last-child { text-align: end; }
+.mobile-row.profile-signout {
+  justify-content: center;
+  color: var(--tms-red-strong);
+  font-size: 15px;
+  font-weight: 650;
 }
 </style>

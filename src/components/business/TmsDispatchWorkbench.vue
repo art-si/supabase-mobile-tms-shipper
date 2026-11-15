@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { fetchWorkbench, type WorkbenchMode } from '@/api/staff'
-import { userMessage } from '@/api/supabase'
 import { usePageResource } from '@/composables/useShipper'
 import { useAuthStore } from '@/stores/auth'
 import { openWorkspace } from '@/utils/workspace'
-import TmsAction from './TmsAction.vue'
+import MobileAction from '@mobile-core/components/MobileAction.vue'
+import MobileRoute from '@mobile-core/components/MobileRoute.vue'
+import MobileSegmented from '@mobile-core/components/MobileSegmented.vue'
 import TmsIcon from './TmsIcon.vue'
 import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
 import TmsStatusTag from './TmsStatusTag.vue'
@@ -13,10 +14,13 @@ import TmsStatusTag from './TmsStatusTag.vue'
 const auth = useAuthStore()
 const mode = ref<WorkbenchMode>('pending')
 const offset = ref(0)
+const options = computed(() => ([
+  { value: 'pending', label: '待配载运单' },
+  { value: 'loaded', label: '已配载运单' }
+] as const).filter(({ value }) => auth.permits(value)))
 const { data, busy, error, load } = usePageResource(async () => {
   await auth.loadStaffAccess()
-  const permitted = (['pending', 'loaded'] as const).filter((key) => auth.permits(key))
-  const fallback = permitted[0]
+  const fallback = options.value[0]?.value
   if (!fallback) return { records: [], total: 0 }
   if (!auth.permits(mode.value)) mode.value = fallback
   return auth.authenticated((token) => fetchWorkbench(token, mode.value, offset.value))
@@ -41,56 +45,70 @@ void load()
 
 <template>
   <view class="shipper-stack dispatch-workbench">
-    <view v-if="auth.permits('pending') || auth.permits('loaded')" class="dispatch-tabs" role="group" aria-label="配载状态">
-      <TmsAction
-        v-if="auth.permits('pending')" class="dispatch-tab" :aria-pressed="mode === 'pending'"
-        :disabled="busy" @click="select('pending')"
-      >待配载运单</TmsAction>
-      <TmsAction
-        v-if="auth.permits('loaded')" class="dispatch-tab" :aria-pressed="mode === 'loaded'"
-        :disabled="busy" @click="select('loaded')"
-      >已配载运单</TmsAction>
+    <text class="section-title dispatch-label" role="heading" aria-level="2">配载运单</text>
+    <MobileSegmented
+      v-if="options.length"
+      :model-value="mode" :options="options" :disabled="busy"
+      label="配载状态" @update:model-value="select"
+    />
+    <view v-if="options.length" class="dispatch-list-heading">
+      <text v-if="data && !busy && !error" class="shipper-copy" role="status">共 {{ data.total }} 张运单</text>
+      <MobileAction class="shipper-inline dispatch-link" @click="openWorkspace(mode)">
+        打开业务工作台 <TmsIcon name="arrow-right" size="24rpx" aria-hidden="true" />
+      </MobileAction>
     </view>
     <TmsPageSkeleton v-if="busy || error" compact label="正在加载运单…" :error="error" @retry="load" />
     <template v-else-if="data?.records.length">
-      <view class="shipper-heading">
-        <text class="shipper-copy">共 {{ data.total }} 张运单</text>
-        <TmsAction class="shipper-inline" @click="openWorkspace(mode)">打开业务工作台 <TmsIcon name="arrow-right" size="24rpx" /></TmsAction>
-      </view>
       <view v-for="row in data.records" :key="row.id" class="card shipper-card shipper-stack dispatch-row">
         <view class="shipper-heading">
-          <text class="dispatch-row__number">{{ row.waybill_no || row.order_no }}</text>
+          <text class="dispatch-row__number" translate="no">{{ row.waybill_no || row.order_no || '暂无单号' }}</text>
           <TmsStatusTag
             :status="mode === 'pending' ? row.order_status || 'pending_load' : row.waybill_status || row.status || ''"
             :batch="mode === 'loaded'"
           />
         </view>
-        <text class="section-title">{{ row.origin_station || row.origin_city || '—' }} → {{ row.destination_station || row.destination_city || '—' }}</text>
-        <text class="shipper-copy">
+        <MobileRoute
+          :origin="row.origin_station || row.origin_city || '发货地待确认'"
+          :destination="row.destination_station || row.destination_city || '收货地待确认'"
+        />
+        <text class="shipper-copy dispatch-row__cargo">
           {{ row.cargo_name || row.cargo_items?.[0]?.cargo_name || '货物' }}
           <template v-if="row.execution_kind === 'merge'"> · 合单</template>
           <template v-else-if="row.execution_kind === 'split'"> · 拆单</template>
         </text>
       </view>
-      <view v-if="data.total > 20" class="shipper-heading">
-        <TmsAction class="shipper-inline" :disabled="!offset" @click="move(-1)">上一页</TmsAction>
+      <view v-if="data.total > 20" class="shipper-heading dispatch-pagination">
+        <MobileAction class="shipper-inline" :disabled="!offset" @click="move(-1)">上一页</MobileAction>
         <text class="shipper-copy">第 {{ page }} 页</text>
-        <TmsAction class="shipper-inline" :disabled="offset + 20 >= data.total" @click="move(1)">下一页</TmsAction>
+        <MobileAction class="shipper-inline" :disabled="offset + 20 >= data.total" @click="move(1)">下一页</MobileAction>
       </view>
     </template>
-    <view v-else class="card shipper-empty">
-      <view class="shipper-empty__icon"><TmsIcon name="waybill" size="44rpx" /></view>
+    <view v-else class="card shipper-card shipper-empty">
+      <view class="shipper-empty__icon" aria-hidden="true"><TmsIcon name="waybill" size="39rpx" /></view>
       <text class="section-title">{{ auth.permits(mode) ? '当前暂无运单' : '账号暂无运单查看权限' }}</text>
     </view>
   </view>
 </template>
 
 <style scoped lang="scss">
-.dispatch-workbench { gap: 19rpx; }
-.dispatch-tabs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 9rpx; padding: 6rpx; border-radius: 20rpx; background: var(--tms-surface-muted); }
-.dispatch-tab { width: 100%; min-height: var(--tms-control-height); border-radius: 15rpx; text-align: center; font-size: max(27rpx, 14px); font-weight: 650; color: var(--tms-muted); }
-.dispatch-tab[aria-pressed=true] { color: var(--tms-primary); background: var(--tms-surface); box-shadow: var(--tms-shadow-sm); }
-.dispatch-row { gap: 15rpx; }
-.dispatch-row__number { color: var(--tms-muted); font-size: max(25rpx, 13px); font-weight: 650; overflow-wrap: anywhere; }
-.dispatch-row .section-title { overflow-wrap: anywhere; }
+.dispatch-label { margin-inline: 2px; }
+.dispatch-list-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 8px;
+  padding-inline-start: 2px;
+}
+.dispatch-link { margin-inline-start: auto; }
+.dispatch-row { gap: 10px; }
+.dispatch-row__number {
+  color: var(--mobile-workspace-muted);
+  font-size: max(23rpx, 12px);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.dispatch-row__cargo { padding-top: 8px; border-top: 1px solid var(--mobile-workspace-line); }
+.dispatch-pagination { flex-wrap: wrap; }
 </style>

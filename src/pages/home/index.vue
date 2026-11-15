@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import MobileWorkspace from '@mobile-core/components/MobileWorkspace.vue'
 import { computed } from 'vue'
 import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
 import { usePageTheme } from '@/composables/usePageTheme'
@@ -7,7 +8,8 @@ import { openOrders, openShipmentForm } from '@/utils/orders'
 import { openWorkspace } from '@/utils/workspace'
 import type { OrderGroup } from '@/api/types'
 import TmsBottomNav from '@/components/business/TmsBottomNav.vue'
-import TmsAction from '@/components/business/TmsAction.vue'
+import TmsAction from '@mobile-core/components/MobileAction.vue'
+import MobileTopBar from '@mobile-core/components/MobileTopBar.vue'
 import TmsIcon from '@/components/business/TmsIcon.vue'
 import TmsMetricGrid from '@/components/business/TmsMetricGrid.vue'
 import TmsOrderCard from '@/components/business/TmsOrderCard.vue'
@@ -37,69 +39,63 @@ onPullDownRefresh(async () => { await refresh(); uni.stopPullDownRefresh() })
 </script>
 
 <template>
-  <view class="page shipper-page home-page" :class="themeName">
-    <view class="shipper-hero home-hero">
-      <view class="shipper-heading">
-        <view class="home-hero__kicker">
-          <view class="home-hero__dot" />
-          <text>TMS 货主端</text>
-        </view>
-        <view class="home-hero__actions">
-          <text v-if="demo" class="demo-label">演示模式</text>
-          <TmsAction class="home-hero__settings" aria-label="界面设置" @click="settings">
-            <TmsIcon name="settings" size="36rpx" />
-          </TmsAction>
-        </view>
-      </view>
-      <text class="shipper-hero__title" role="heading" aria-level="1">{{ auth.staff ? '物流业务工作台' : '发货工作台' }}</text>
-      <text v-if="data" class="shipper-hero__meta">{{ data.profile.customerName }}</text>
-    </view>
+  <MobileWorkspace class="page shipper-page" :class="themeName">
+    <MobileTopBar
+      capsule="always"
+      :title="auth.staff ? '物流工作台' : '发货工作台'"
+      :eyebrow="demo ? '演示模式' : undefined"
+      :subtitle="data?.profile.customerName"
+      show-menu menu-icon="settings" menu-label="界面设置" @menu="settings"
+    />
 
     <view class="shipper-content shipper-content--tabbed home-content" role="main">
       <template v-if="auth.staff && !error">
-        <view class="card shipper-card home-create">
-          <view class="home-create__intro">
-            <view class="home-create__icon"><TmsIcon name="waybill" size="50rpx" /></view>
-            <view class="home-create__copy">
-              <text class="section-title">运输业务</text>
-              <text class="shipper-copy">查看待配载运输单、已配载运单与运输状态。</text>
-            </view>
+        <view class="home-section">
+          <text class="mobile-group-title" role="heading" aria-level="2">运输业务</text>
+          <view class="mobile-group">
+            <TmsAction class="mobile-row" @click="openOrders()">
+              <view class="mobile-row__icon"><TmsIcon name="waybill" size="19px" /></view>
+              <view class="mobile-row__body">
+                <text class="mobile-row__label">查看运单</text>
+                <text class="mobile-row__detail">待配载运输单和在途运单</text>
+              </view>
+              <TmsIcon class="mobile-row__chevron" name="arrow-right" size="16px" />
+            </TmsAction>
+            <TmsAction v-if="auth.permits('open')" class="mobile-row" @click="openWorkspace('open')">
+              <view class="mobile-row__icon"><TmsIcon name="add" size="19px" /></view>
+              <view class="mobile-row__body"><text class="mobile-row__label">发货开单</text></view>
+              <TmsIcon class="mobile-row__chevron" name="arrow-right" size="16px" />
+            </TmsAction>
           </view>
-          <wd-button type="primary" block custom-class="tms-primary-action" @click="openOrders()">查看运单</wd-button>
-          <wd-button
-            v-if="auth.permits('open')" block custom-class="tms-secondary-action" @click="openWorkspace('open')"
-          >发货开单</wd-button>
         </view>
       </template>
       <template v-else-if="data">
-        <view class="card shipper-card home-create">
-          <view class="home-create__intro">
-            <view class="home-create__icon"><TmsIcon name="box" size="50rpx" /></view>
-            <view class="home-create__copy">
-              <text class="section-title">发货委托</text>
-              <text class="shipper-copy">填写收发货地址和货物，交由服务商安排运输。</text>
-            </view>
+        <view class="home-section">
+          <view class="shipper-heading home-section__header">
+            <text class="mobile-group-title" role="heading" aria-level="2">订单概览</text>
+            <TmsAction class="shipper-inline" @click="openOrders()">全部订单 <TmsIcon name="arrow-right" size="14px" /></TmsAction>
           </view>
-          <wd-button block type="primary" custom-class="tms-primary-action" @click="openShipmentForm">
-            <TmsIcon name="add" size="32rpx" /> 我要发货
-          </wd-button>
-        </view>
-
-        <view class="card shipper-card home-metrics">
-          <text class="section-title" role="heading" aria-level="2">订单概览</text>
           <TmsMetricGrid :items="metrics" @select="openOrders" />
         </view>
 
-        <view class="shipper-stack">
-          <view class="shipper-heading home-heading">
-            <text class="section-title" role="heading" aria-level="2">最近订单</text>
-            <TmsAction class="shipper-inline" @click="openOrders()">
-              全部订单 <TmsIcon name="arrow-right" size="25rpx" />
-            </TmsAction>
+        <view class="mobile-group">
+          <TmsAction class="mobile-row" aria-label="我要发货" @click="openShipmentForm">
+            <view class="mobile-row__icon home-shipment__icon"><TmsIcon name="add" size="20px" /></view>
+            <view class="mobile-row__body">
+              <text class="mobile-row__label">我要发货</text>
+              <text class="mobile-row__detail">提交发货委托</text>
+            </view>
+            <TmsIcon class="mobile-row__chevron" name="arrow-right" size="16px" />
+          </TmsAction>
+        </view>
+
+        <view class="home-section">
+          <text class="mobile-group-title" role="heading" aria-level="2">最近订单</text>
+          <view v-if="data.recent.length" class="shipper-stack">
+            <TmsOrderCard v-for="order in data.recent" :key="order.id" :order="order" />
           </view>
-          <TmsOrderCard v-for="order in data.recent" :key="order.id" :order="order" />
-          <view v-if="!data.recent.length" class="card shipper-empty">
-            <view class="shipper-empty__icon"><TmsIcon name="waybill" size="46rpx" /></view>
+          <view v-else class="shipper-card shipper-empty">
+            <view class="shipper-empty__icon"><TmsIcon name="waybill" size="24px" /></view>
             <text class="section-title">暂无订单</text>
             <text class="shipper-copy">提交发货委托后，可在这里查看运输进度。</text>
           </view>
@@ -109,55 +105,13 @@ onPullDownRefresh(async () => { await refresh(); uni.stopPullDownRefresh() })
     </view>
 
     <TmsBottomNav active="home" />
-  </view>
+  </MobileWorkspace>
 </template>
 
 <style scoped lang="scss">
-.home-hero { padding-top: calc(30rpx + env(safe-area-inset-top)); }
-/* #ifdef MP-WEIXIN */
-.home-hero { padding-top: max(132rpx, calc(80rpx + env(safe-area-inset-top))); }
-/* #endif */
-.home-hero__kicker,
-.home-hero__actions {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 12rpx;
-  font-size: max(24rpx, 12px);
-  font-weight: 700;
-}
-.home-hero__dot {
-  width: 12rpx;
-  height: 12rpx;
-  border-radius: 50%;
-  background: #86efac;
-  box-shadow: 0 0 0 6rpx rgba(134,239,172,.13);
-}
-.home-hero__settings {
-  width: var(--tms-control-height);
-  height: var(--tms-control-height);
-  border: 1px solid rgba(255,255,255,.2);
-  border-radius: 50%;
-  padding: 0;
-  background: rgba(255,255,255,.12);
-  color: #fff;
-  display: grid;
-  place-items: center;
-}
-.home-hero__settings:focus-visible { outline-color: white; }
-.home-content { margin-top: -65rpx; position: relative; }
-.home-create { display: grid; gap: 25rpx; }
-.home-create__intro { display: flex; gap: 22rpx; align-items: center; }
-.home-create__icon {
-  display: grid;
-  place-items: center;
-  flex: 0 0 98rpx;
-  height: 98rpx;
-  color: var(--tms-primary);
-  border-radius: 28rpx;
-  background: linear-gradient(140deg, var(--tms-primary-soft), var(--tms-primary-soft-strong));
-}
-.home-create__copy { min-width: 0; display: grid; gap: 8rpx; }
-.home-metrics { display: grid; gap: 23rpx; }
-.home-heading { margin: -6rpx 4rpx -5rpx; }
+.home-content { row-gap: 20px; }
+.home-section { display: grid; gap: 9px; min-width: 0; }
+.home-section__header .mobile-group-title { margin-block: 0; }
+.home-section__header .shipper-inline { padding-inline-end: 2px; }
+.home-shipment__icon { background: var(--tms-primary); color: #fff; }
 </style>
