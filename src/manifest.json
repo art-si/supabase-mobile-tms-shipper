@@ -1,0 +1,16 @@
+{
+  "name": "TMS 货主端",
+  "description": "发货委托、运输跟踪与签收回单",
+  "versionName": "0.1.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "h5": {
+    "title": "TMS 货主端",
+    "router": { "mode": "hash" }
+  },
+  "mp-weixin": {
+    "appid": "",
+    "usingComponents": true,
+    "setting": { "urlCheck": true, "es6": true, "postcss": true, "minified": true }
+  }
+}

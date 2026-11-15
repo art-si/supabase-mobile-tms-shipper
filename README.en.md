@@ -1,36 +1,21 @@
-# supabase-mobile-tms-shipper
+# TMS Shipper
 
-#### Description
-{**When you're done, you can delete the content in this README and update the file with details for others getting started with your repository**}
+The mobile shipper workspace for Art Supabase TMS. Customers submit shipment requests, track their source transport orders and individual dispatch batches, and view delivery receipts. The TMS web app continues to handle load planning and dispatch.
 
-#### Software Architecture
-Software architecture description
+The app uses the driver app's Uni-app, Vue 3, TypeScript, Pinia, Wot Design Uni, themes, and complete set of repository skills. It builds for H5 and WeChat Mini Programs.
 
-#### Installation
+```powershell
+pnpm install --frozen-lockfile
+pnpm dev:h5
+pnpm typecheck
+pnpm build:h5
+pnpm build:mp-weixin
+```
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+Choose **进入演示** on the development login page to try shipment submission, status filters, split batches, and an example receipt.
 
-#### Instructions
+The workspace also includes shipment updates, saved goods and addresses, and confirmed customer statements. Staff use their existing TMS permissions for dispatch, split and merge, master data, and settlement. Set `VITE_TMS_WEB_URL` to connect the management workspaces.
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+For a live environment, apply the migration to an existing Art Supabase TMS database, deploy the `tms-shipper` Edge Function, provision a dedicated Supabase Auth account and customer binding, and configure the client with the project URL and publishable key.
 
-#### Contribution
-
-1.  Fork the repository
-2.  Create Feat_xxx branch
-3.  Commit your code
-4.  Create Pull Request
-
-
-#### Gitee Feature
-
-1.  You can use Readme\_XXX.md to support different languages, such as Readme\_en.md, Readme\_zh.md
-2.  Gitee blog [blog.gitee.com](https://blog.gitee.com)
-3.  Explore open source project [https://gitee.com/explore](https://gitee.com/explore)
-4.  The most valuable open source project [GVP](https://gitee.com/gvp)
-5.  The manual of Gitee [https://gitee.com/help](https://gitee.com/help)
-6.  The most popular members  [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+See the [Chinese README](README.md) for deployment and account setup.

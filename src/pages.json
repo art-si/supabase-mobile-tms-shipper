@@ -1,0 +1,28 @@
+{
+  "easycom": {
+    "autoscan": true,
+    "custom": { "^wd-(.*)": "@wot-ui/ui/components/wd-$1/wd-$1.vue" }
+  },
+  "pages": [
+    { "path": "pages/login/index" },
+    { "path": "pages/home/index", "style": { "enablePullDownRefresh": true } },
+    { "path": "pages/order/index", "style": { "enablePullDownRefresh": true } },
+    { "path": "pages/order/create" },
+    { "path": "pages/order/detail", "style": { "enablePullDownRefresh": true } },
+    { "path": "pages/message/index", "style": { "enablePullDownRefresh": true } },
+    { "path": "pages/mine/saved" },
+    { "path": "pages/mine/statements" },
+    { "path": "pages/mine/driver-settlement" },
+    { "path": "pages/workspace/index" },
+    { "path": "pages/mine/index" },
+    { "path": "pages/settings/index" }
+  ],
+  "globalStyle": {
+    "navigationStyle": "custom",
+    "navigationBarTitleText": "TMS 货主端",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f5f7",
+    "rpxCalcMaxDeviceWidth": 430,
+    "rpxCalcBaseDeviceWidth": 375
+  }
+}

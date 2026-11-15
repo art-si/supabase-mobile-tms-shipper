@@ -1,0 +1,5 @@
+project_id = "supabase-mobile-tms-shipper"
+
+[functions.tms-shipper]
+# The function validates the caller with Supabase Auth before calling the service-role RPC.
+verify_jwt = false
