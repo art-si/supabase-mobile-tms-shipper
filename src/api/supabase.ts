@@ -1,3 +1,4 @@
+import { parseLoginAccount } from '@mobile-core/account'
 import type { Session } from './types'
 
 const URL = (
@@ -12,8 +13,10 @@ export const hasSupabaseConfig = Boolean(URL && KEY)
 export const demoEnabled = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEMO === 'true'
 
 const errorMessages: Record<string, string> = {
-  invalid_credentials: '邮箱或密码不正确。',
+  invalid_credentials: '手机号、邮箱或密码不正确。',
+  invalid_account: '请输入有效的手机号或邮箱。',
   email_not_confirmed: '请验证邮箱后再登录。',
+  phone_not_confirmed: '请验证手机号后再登录。',
   SHIPPER_NOT_BOUND: '此账号尚未开通货主服务，请联系物流服务商。',
   SHIPPER_ORDER_NOT_FOUND: '找不到这张订单，请返回订单列表。',
   SHIPPER_RECORD_NOT_FOUND: '此记录已变更或不可查看。',
@@ -79,8 +82,22 @@ export function request<T>(path: string, data: object = {}, token?: string): Pro
   })
 }
 
-export const loginWithPassword = (email: string, password: string) =>
-  request<Session>('/auth/v1/token?grant_type=password', { email, password })
+export async function loginWithPassword(identifier: string, password: string) {
+  const account = parseLoginAccount(identifier)
+  if (!account) throw new ApiError(400, 'invalid_account')
+  const passwordEndpoint = '/auth/v1/token?grant_type=password'
+  if (account.type === 'email') return request<Session>(passwordEndpoint, { email: account.value, password })
+
+  try {
+    return await request<Session>(passwordEndpoint, { phone: account.value, password })
+  } catch (error) {
+    if (!(error instanceof ApiError) || !['invalid_credentials', 'phone_provider_disabled'].includes(error.code)) throw error
+    // Existing Web TMS accounts may store the phone in their business profile.
+    const result = await request<{ session: Session }>('/functions/v1/login-with-phone', { phone: account.local, password }, KEY)
+    if (!result?.session?.access_token) throw new ApiError(502, 'INVALID_LOGIN_SESSION', '登录服务暂时不可用，请稍后重试。')
+    return result.session
+  }
+}
 
 export const refreshToken = (refresh_token: string) =>
   request<Session>('/auth/v1/token?grant_type=refresh_token', { refresh_token })

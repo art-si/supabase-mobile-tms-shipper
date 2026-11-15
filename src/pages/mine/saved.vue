@@ -12,6 +12,7 @@ import MobileField from '@mobile-core/components/MobileField.vue'
 import TmsIcon from '@/components/business/TmsIcon.vue'
 import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
 import MobileTopBar from '@mobile-core/components/MobileTopBar.vue'
+import { MOBILE_DANGER_COLOR } from '@mobile-core/theme'
 
 const { themeName } = usePageTheme()
 const { auth, demo, savedItems, saveItem, deleteItem } = useShipper()
@@ -78,6 +79,7 @@ function remove(item: SavedItem) {
     title: '删除常用资料',
     content: `确认删除「${item.title}」？`,
     confirmText: '删除',
+    confirmColor: MOBILE_DANGER_COLOR,
     success: async ({ confirm }) => {
       if (!confirm || saving.value) return
       saving.value = true
@@ -117,7 +119,9 @@ function remove(item: SavedItem) {
             <MobileField v-model="contact.address" field="saved-address" label="详细地址" placeholder="省市区、街道及门牌…" :maxlength="240" :disabled="saving" :error="errors.address" required />
           </template>
           <text v-if="actionError" class="shipper-error" role="alert">{{ actionError }}</text>
-          <wd-button type="primary" block custom-class="tms-primary-action" :loading="saving" :disabled="saving" @click="save">保存</wd-button>
+          <MobileAction class="tms-primary-action" :aria-busy="saving" :disabled="saving" @click="save">
+            {{ saving ? '正在保存…' : '保存' }}
+          </MobileAction>
         </view>
         <TmsPageSkeleton v-else-if="busy || error" label="正在加载资料…" :error="error" @retry="refresh" />
         <template v-else>

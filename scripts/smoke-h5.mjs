@@ -111,7 +111,17 @@ try {
   await button('常用货物').click()
   await page.getByText('新增货物', { exact: false }).click()
   await field('saved-title').fill('测试家电配件')
-  await text('保存').click()
+  const save = button('保存')
+  const alignment = await save.evaluate((control) => {
+    const range = document.createRange()
+    range.selectNodeContents(control)
+    const label = range.getBoundingClientRect()
+    const target = control.getBoundingClientRect()
+    const verticalOffset = (label.top + label.bottom - target.top - target.bottom) / 2
+    return { height: target.height, verticalOffset }
+  })
+  assert.ok(alignment.height >= 44 && Math.abs(alignment.verticalOffset) < 3, JSON.stringify(alignment))
+  await save.press('Enter')
   await text('测试家电配件').waitFor()
   await button('编辑 测试家电配件').click()
   await field('saved-title').fill('测试托盘')

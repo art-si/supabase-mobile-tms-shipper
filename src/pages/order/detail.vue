@@ -170,7 +170,7 @@ function copyNumber(number: string) {
       </template>
       <view v-else class="shipper-stack">
         <TmsPageSkeleton label="正在加载订单详情…" :error="error" @retry="refresh" />
-        <wd-button v-if="error" block custom-class="tms-secondary-action" @click="openOrders()">返回订单</wd-button>
+        <MobileAction v-if="error" class="tms-secondary-action" @click="openOrders()">返回订单</MobileAction>
       </view>
     </view>
   </MobileWorkspace>

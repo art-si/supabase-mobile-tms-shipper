@@ -116,18 +116,18 @@ async function loadMore() {
           </view>
           <TmsOrderCard v-for="order in orders" :key="order.id" :order="order" />
           <text v-if="moreError" class="shipper-error" role="alert">{{ moreError }}</text>
-          <wd-button
-            v-if="cursor" block custom-class="tms-secondary-action" :loading="moreBusy" :disabled="moreBusy"
+          <MobileAction
+            v-if="cursor" class="tms-secondary-action" :aria-busy="moreBusy" :disabled="moreBusy"
             @click="loadMore"
-          >{{ moreError ? '重试加载' : '加载更多' }}</wd-button>
+          >{{ moreBusy ? '正在加载…' : moreError ? '重试加载' : '加载更多' }}</MobileAction>
         </view>
         <view v-else class="card shipper-card shipper-empty">
           <view class="shipper-empty__icon" aria-hidden="true"><TmsIcon name="waybill" size="39rpx" /></view>
           <text class="section-title" role="heading" aria-level="2">{{ keyword || filter !== 'all' ? '没有符合条件的订单' : '暂无订单' }}</text>
           <text class="shipper-copy">{{ keyword || filter !== 'all' ? '可更换关键词或切换状态查看。' : '提交发货委托后，可在这里查单。' }}</text>
-          <wd-button
-            v-if="!keyword && filter === 'all'" type="primary" custom-class="tms-primary-action" @click="openShipmentForm"
-          >我要发货</wd-button>
+          <MobileAction
+            v-if="!keyword && filter === 'all'" class="tms-primary-action" @click="openShipmentForm"
+          >我要发货</MobileAction>
         </view>
       </template>
 

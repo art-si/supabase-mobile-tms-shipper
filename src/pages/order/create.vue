@@ -12,6 +12,7 @@ import MobileAction from '@mobile-core/components/MobileAction.vue'
 import MobileField from '@mobile-core/components/MobileField.vue'
 import MobileSelect from '@mobile-core/components/MobileSelect.vue'
 import MobileTopBar from '@mobile-core/components/MobileTopBar.vue'
+import { MOBILE_DANGER_COLOR } from '@mobile-core/theme'
 import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
 
 const { theme, themeName } = usePageTheme()
@@ -77,6 +78,7 @@ function confirmBack() {
       title: '离开发货委托？',
       content: '本页已填写的信息会丢失。',
       confirmText: '离开',
+      confirmColor: MOBILE_DANGER_COLOR,
       success: ({ confirm }) => {
         allowLeave = confirm
         resolve(confirm)

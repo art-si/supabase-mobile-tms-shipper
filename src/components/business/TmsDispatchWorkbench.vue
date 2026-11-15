@@ -11,6 +11,8 @@ import TmsIcon from './TmsIcon.vue'
 import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
 import TmsStatusTag from './TmsStatusTag.vue'
 
+defineOptions({ options: { styleIsolation: 'shared' } })
+
 const auth = useAuthStore()
 const mode = ref<WorkbenchMode>('pending')
 const offset = ref(0)

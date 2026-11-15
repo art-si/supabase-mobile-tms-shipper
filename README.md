@@ -46,7 +46,7 @@ H5 浏览器回归可在 dev server 运行后执行 `pnpm audit:h5`。默认检�
    supabase functions deploy tms-shipper --project-ref <project-ref>
    ```
 
-3. 在 Supabase Auth 创建独立的货主邮箱账号。用其 Auth UID 绑定 `mdm_customer.id` 和对应服务商租户。提交委托还需配置同租户可用的开单归属人 `sys_user.id`，并启用 `tms.order` 自动编号。没有开单归属人的绑定可以查单。
+3. 在 Supabase Auth 开通独立的货主账号，用邮箱和密码登录。若项目启用了手机号认证，已绑定验证手机号的货主也可用手机号和密码登录。用货主的 Auth UID 绑定 `mdm_customer.id` 和对应服务商租户。提交委托还需配置同租户可用的开单归属人 `sys_user.id`，并启用 `tms.order` 自动编号。没有开单归属人的绑定可以查单。
 
    ```sql
    insert into tms_shipper_private.accounts (
@@ -61,7 +61,7 @@ H5 浏览器回归可在 dev server 运行后执行 `pnpm audit:h5`。默认检�
    ```
 
 4. 复制 `.env.example` 为 `.env.local`。填写 `VITE_SUPABASE_URL` 和该项目的 `VITE_SUPABASE_KEY`（publishable key 或旧版 anon key）。小程序需要代理时填 `VITE_SUPABASE_MP_URL`，代理应提供 `/auth/v1`、`/rest/v1`、`/functions/v1` 和 `/storage/v1`。
-5. 为员工操作配置 `VITE_TMS_WEB_URL`，填 Art Supabase Pro 的完整部署根地址，保留子目录路径。微信小程序还需将 Web TMS 域名登记为 `web-view` 业务域名。Web 工作台沿用独立登录会话及现有角色、按钮权限。
+5. 为员工操作配置 `VITE_TMS_WEB_URL`，填 Art Supabase Pro 的完整部署根地址，保留子目录路径。微信小程序还需将 Web TMS 域名登记为 `web-view` 业务域名。Web 工作台沿用独立登录会话及现有角色、按钮权限。已在 Web TMS 用户资料登记手机号的员工可通过 `login-with-phone` 登录员工工作台，货主绑定使用独立的 Auth UID。
 
 ## 业务规则
 

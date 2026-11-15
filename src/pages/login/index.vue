@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onShow } from '@dcloudio/uni-app'
 import MobileLogin from '@mobile-core/components/MobileLogin.vue'
+import { parseLoginAccount } from '@mobile-core/account'
 import { useAuthStore } from '@/stores/auth'
 import { usePageTheme } from '@/composables/usePageTheme'
 import { demoEnabled, hasSupabaseConfig, userMessage } from '@/api/supabase'
@@ -26,7 +27,7 @@ onShow(() => {
 })
 
 function validateAccount(account: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account) ? '' : '请输入有效的邮箱地址。'
+  return parseLoginAccount(account) ? '' : '请输入有效的手机号或邮箱。'
 }
 
 async function authenticate(account: string, password: string) {
@@ -48,8 +49,8 @@ function startDemo() {
     <MobileLogin
       :theme-name="'tms-' + theme.preset"
       :brand="brand"
-      account-label="登录邮箱"
-      account-placeholder="请输入登录邮箱"
+      account-label="登录账号"
+      account-placeholder="请输入手机号或邮箱"
       account-hint="使用物流服务商开通的 TMS 账号"
       remember-key="tms-shipper-account"
       help-text="首次使用请联系物流服务商开通账号。"

@@ -2,13 +2,14 @@
 import MobileWorkspace from '@mobile-core/components/MobileWorkspace.vue'
 import { computed, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import { userMessage } from '@/api/supabase'
+import { ApiError, userMessage } from '@/api/supabase'
 import { useAuthStore } from '@/stores/auth'
 import { usePageTheme } from '@/composables/usePageTheme'
 import { isWorkspaceKey, workspace, workspaceUrl, type WorkspaceKey } from '@/utils/workspace'
 import TmsIcon from '@/components/business/TmsIcon.vue'
 import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
 import MobileTopBar from '@mobile-core/components/MobileTopBar.vue'
+import MobileAction from '@mobile-core/components/MobileAction.vue'
 // #ifdef H5
 import { Browser } from '@capacitor/browser'
 import { isAndroidApp } from '@mobile-core/platform'
@@ -18,7 +19,7 @@ const { themeName } = usePageTheme()
 const auth = useAuthStore()
 const key = ref<WorkspaceKey>()
 const busy = ref(true)
-const error = ref('')
+const failure = ref<{ message: string; retryable: boolean }>()
 const embedded = ref(false)
 const embedError = ref('')
 const entry = computed(() => key.value ? workspace(key.value) : undefined)
@@ -30,12 +31,17 @@ onShow(checkAccess)
 async function checkAccess() {
   if (!auth.guard()) return
   busy.value = true
-  error.value = ''
+  failure.value = undefined
   try {
+    if (!key.value) {
+      failure.value = { message: '找不到此业务入口，请从所属页面重新进入。', retryable: false }
+      return
+    }
     await auth.loadStaffAccess()
-    if (!key.value || !auth.permits(key.value)) error.value = '此功能需要相应的 TMS 业务权限。'
+    if (!auth.permits(key.value)) failure.value = { message: '此功能需要相应的 TMS 业务权限。', retryable: false }
   } catch (cause) {
-    error.value = userMessage(cause, '权限加载失败，请稍后重试。')
+    const denied = cause instanceof ApiError && [401, 403].includes(cause.status)
+    failure.value = { message: userMessage(cause, '权限加载失败，请稍后重试。'), retryable: !denied }
   } finally {
     busy.value = false
   }
@@ -74,11 +80,11 @@ async function launchExternal(event: MouseEvent) {
     <MobileTopBar capsule="always" :title="entry?.title || '业务工作台'" :eyebrow="auth.demo ? '演示模式' : undefined" show-back />
     <view class="shipper-content" role="main">
       <TmsPageSkeleton v-if="busy" label="正在核对业务权限…" />
-      <view v-else-if="error" class="card shipper-card shipper-empty">
+      <view v-else-if="failure" class="card shipper-card shipper-empty">
         <view class="shipper-empty__icon" aria-hidden="true"><TmsIcon name="lock" size="42rpx" /></view>
         <text class="section-title" role="heading" aria-level="2">暂时无法打开工作台</text>
-        <text class="shipper-copy" role="alert">{{ error }}</text>
-        <wd-button custom-class="tms-secondary-action" @click="checkAccess">重试</wd-button>
+        <text class="shipper-copy" role="alert">{{ failure.message }}</text>
+        <MobileAction v-if="failure.retryable" class="tms-secondary-action" @click="checkAccess">重试</MobileAction>
       </view>
       <template v-else-if="entry">
         <view class="card shipper-card shipper-stack workspace-card">
@@ -97,9 +103,9 @@ async function launchExternal(event: MouseEvent) {
           </a>
           <!-- #endif -->
           <!-- #ifdef MP-WEIXIN -->
-          <wd-button v-if="link" block type="primary" custom-class="tms-primary-action" @click="launchEmbedded">
+          <MobileAction v-if="link" class="tms-primary-action" @click="launchEmbedded">
             打开 Web TMS
-          </wd-button>
+          </MobileAction>
           <!-- #endif -->
         </view>
         <view v-if="entry.instruction" class="workspace-instructions">

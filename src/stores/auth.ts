@@ -67,8 +67,8 @@ export const useAuthStore = defineStore('auth', {
       uni.removeStorageSync(DEMO_KEY)
       uni.removeStorageSync(STAFF_KEY)
     },
-    async login(email: string, password: string) {
-      const session = await loginWithPassword(email, password)
+    async login(account: string, password: string) {
+      const session = await loginWithPassword(account, password)
       let menus: string[] = []
       let buttons: string[] = []
       try {

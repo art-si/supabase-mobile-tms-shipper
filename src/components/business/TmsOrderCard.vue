@@ -6,6 +6,8 @@ import TmsStatusTag from './TmsStatusTag.vue'
 import MobileAction from '@mobile-core/components/MobileAction.vue'
 import MobileRoute from '@mobile-core/components/MobileRoute.vue'
 
+defineOptions({ options: { styleIsolation: 'shared' } })
+
 defineProps<{ order: OrderSummary }>()
 </script>
 

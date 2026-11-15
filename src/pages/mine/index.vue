@@ -10,6 +10,7 @@ import TmsBottomNav from '@/components/business/TmsBottomNav.vue'
 import TmsIcon from '@/components/business/TmsIcon.vue'
 import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
 import MobileTopBar from '@mobile-core/components/MobileTopBar.vue'
+import { MOBILE_DANGER_COLOR } from '@mobile-core/theme'
 
 const { themeName } = usePageTheme()
 const { auth, demo, profile } = useShipper()
@@ -44,6 +45,7 @@ function logout() {
     title: demo.value ? '退出演示' : '退出登录',
     content: '确认返回登录页面？',
     confirmText: '退出',
+    confirmColor: MOBILE_DANGER_COLOR,
     success: ({ confirm }) => { if (confirm) auth.logout() }
   })
 }
@@ -58,8 +60,8 @@ function logout() {
           <view class="mobile-row__icon profile-avatar"><TmsIcon name="user" size="22px" /></view>
           <view class="mobile-row__body">
             <text class="profile-name">{{ data.displayName }}</text>
-            <text v-if="auth.session?.user?.email || data.customerName" class="mobile-row__detail">
-              {{ auth.session?.user?.email || data.customerName }}
+            <text v-if="auth.session?.user?.email && auth.session.user.email !== data.displayName" class="mobile-row__detail">
+              {{ auth.session.user.email }}
             </text>
           </view>
         </view>
