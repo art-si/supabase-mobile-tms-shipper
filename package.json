@@ -6,7 +6,7 @@
   "scripts": {
     "dev:h5": "uni -p h5",
     "dev:mp-weixin": "uni -p mp-weixin",
-    "build:h5": "uni build -p h5",
+    "build:h5": "uni build -p h5 --outDir docs",
     "build:mp-weixin": "uni build -p mp-weixin",
     "typecheck": "node scripts/mobile-pro.mjs && vue-tsc --noEmit --pretty false",
     "icons:build": "node scripts/build-icons.mjs",

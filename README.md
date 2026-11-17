@@ -2,7 +2,7 @@
 
 亿企工场 TMS 的货主移动端。货主提交发货委托，按原始运输单跟踪发运、到达、分批签收和回单。服务商在 Art Supabase TMS 中继续配载、派车和归档。
 
-项目使用 Uni-app、Vue 3、TypeScript、Pinia 和 Wot Design Uni，从主仓复用以司机端为基准的样式与主题组件，支持 H5 和微信小程序。`.agents/skills` 和 `skills-lock.json` 原样来自司机端。
+项目使用 Uni-app、Vue 3、TypeScript、Pinia 和 Wot Design Uni，从主仓复用以司机端为基准的样式与主题组件，支持 H5 和微信小程序。项目技能位于 `.agents/skills`，上游来源和版本记录在 `skills-lock.json`。
 
 ## 功能
 
@@ -33,9 +33,11 @@ pnpm build:h5
 pnpm build:mp-weixin
 ```
 
-H5 输出到 `dist/build/h5`，小程序输出到 `dist/build/mp-weixin`。小程序发布时，在 `src/manifest.json` 配置货主端 AppID，并在微信公众平台配置 Supabase 或 HTTPS 代理的 request、downloadFile 合法域名。
+H5 输出到 `docs/`，小程序输出到 `dist/build/mp-weixin`。小程序发布时，在 `src/manifest.json` 配置货主端 AppID，并在微信公众平台配置 Supabase 或 HTTPS 代理的 request、downloadFile 合法域名。
 
 H5 浏览器回归可在 dev server 运行后执行 `pnpm audit:h5`。默认检查 `http://127.0.0.1:5186/`，如需其他端口可设置 `TMS_SMOKE_URL`。
+
+发布到 GitHub Pages 时，运行 `pnpm build:h5`，将生成的 `docs/`（包括 `.nojekyll`）提交到货主端仓库的发布分支。打开仓库的 **Settings → Pages**，选择 **Deploy from a branch**，设置该分支和 `/docs`。H5 使用相对资源路径和 hash 路由，可以直接部署在仓库子路径下。要让线上预览保留「进入演示」，构建前设置 `VITE_ENABLE_DEMO=true`。正式登录的环境配置见下节。
 
 ## 接入现有 TMS
 
@@ -62,6 +64,7 @@ H5 浏览器回归可在 dev server 运行后执行 `pnpm audit:h5`。默认检�
 
 4. 复制 `.env.example` 为 `.env.local`。填写 `VITE_SUPABASE_URL` 和该项目的 `VITE_SUPABASE_KEY`（publishable key 或旧版 anon key）。小程序需要代理时填 `VITE_SUPABASE_MP_URL`，代理应提供 `/auth/v1`、`/rest/v1`、`/functions/v1` 和 `/storage/v1`。
 5. 为员工操作配置 `VITE_TMS_WEB_URL`，填 Art Supabase Pro 的完整部署根地址，保留子目录路径。微信小程序还需将 Web TMS 域名登记为 `web-view` 业务域名。Web 工作台沿用独立登录会话及现有角色、按钮权限。已在 Web TMS 用户资料登记手机号的员工可通过 `login-with-phone` 登录员工工作台，货主绑定使用独立的 Auth UID。
+6. 微信小程序的「手机一键登录」默认关闭。使用货主端自己的微信 AppID，开通获取手机号能力，并在同一个 Supabase 项目完成主仓 `mobile-wechat-auth` 和货主服务的部署后，才把 `VITE_ENABLE_WECHAT_PHONE_LOGIN` 设为 `true`。货主和员工先凭账号密码登录，再于 10 分钟内从「我的」授权绑定微信手机号。之后可使用一键登录，每次仍需通过货主绑定或员工权限检查。H5 和未启用的构建继续使用账号密码登录。
 
 ## 业务规则
 

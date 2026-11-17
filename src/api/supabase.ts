@@ -99,6 +99,23 @@ export async function loginWithPassword(identifier: string, password: string) {
   }
 }
 
+export async function exchangeWechatPhoneCode(phoneCode: string) {
+  const session = await request<Session>('/functions/v1/mobile-wechat-auth', { app: 'shipper', phoneCode }, KEY)
+  if (
+    typeof session?.access_token !== 'string' || !session.access_token ||
+    typeof session.refresh_token !== 'string' || !session.refresh_token ||
+    !Number.isFinite(session.expires_in) || session.expires_in <= 0 ||
+    (session.expires_at !== undefined && (!Number.isFinite(session.expires_at) || session.expires_at <= 0)) ||
+    typeof session.user?.id !== 'string' || !session.user.id
+  ) throw new ApiError(502, 'INVALID_LOGIN_SESSION')
+  return session
+}
+
+export async function bindWechatPhoneCode(phoneCode: string, token: string) {
+  const result = await request<{ bound?: boolean }>('/functions/v1/mobile-wechat-auth', { app: 'shipper', action: 'bind', phoneCode }, token)
+  if (result?.bound !== true) throw new ApiError(502, 'WECHAT_PHONE_UNAVAILABLE')
+}
+
 export const refreshToken = (refresh_token: string) =>
   request<Session>('/auth/v1/token?grant_type=refresh_token', { refresh_token })
 

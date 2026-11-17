@@ -5,23 +5,27 @@ import { onBackPress, onShow, onUnload } from '@dcloudio/uni-app'
 import { userMessage } from '@/api/supabase'
 import type { SavedItem, ShipmentContact, ShipmentDraft } from '@/api/types'
 import { isContactPhone, normalizeContact } from '@/utils/orders'
+import { clearShipmentDraft, rememberShipmentDraft, takeShipmentDraft, type ShipmentFormCargo } from '@/utils/shipment-draft'
 import { usePageTheme } from '@/composables/usePageTheme'
 import { usePageResource, useShipper } from '@/composables/useShipper'
-import TmsIcon from '@/components/business/TmsIcon.vue'
+import MobileIcon from '@mobile-core/components/MobileIcon.vue'
+import MobileInlineLabel from '@mobile-core/components/MobileInlineLabel.vue'
 import MobileAction from '@mobile-core/components/MobileAction.vue'
+import MobileConfirmDialog from '@mobile-core/components/MobileConfirmDialog.vue'
+import MobileEmptyState from '@mobile-core/components/MobileEmptyState.vue'
 import MobileField from '@mobile-core/components/MobileField.vue'
 import MobileSelect from '@mobile-core/components/MobileSelect.vue'
 import MobileTopBar from '@mobile-core/components/MobileTopBar.vue'
-import { MOBILE_DANGER_COLOR } from '@mobile-core/theme'
 import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
+import { revealControl } from '@mobile-core/form-focus'
 
 const { theme, themeName } = usePageTheme()
-const { auth, demo, stations, create, savedItems } = useShipper()
+const { auth, demo, stations, create, savedItems, shipmentOwner: draftOwner } = useShipper()
 const { data: stationOptions, error: optionsError, load: loadOptions } =
   usePageResource(stations, '站点加载失败，请重新加载。')
 
 let nextLineId = 0
-function blankLine() {
+function blankLine(): ShipmentFormCargo {
   return { id: ++nextLineId, name: '', quantity: '', weightKg: '', volumeM3: '' }
 }
 
@@ -36,62 +40,114 @@ const sides = [
 ] as const
 const lines = ref([blankLine()])
 const remark = ref('')
+const remarkOpen = ref(false)
 const focused = ref('')
-const validationActive = ref(false)
-const errors = computed<Record<string, string>>(() => validationActive.value ? validate() : {})
+const fieldsToValidate = ref<string[]>([])
+const errors = computed<Record<string, string>>(() => {
+  if (!fieldsToValidate.value.length) return {}
+  const current = validate()
+  const shown: Record<string, string> = {}
+  for (const key of fieldsToValidate.value) {
+    const message = current[key]
+    if (message) shown[key] = message
+  }
+  return shown
+})
 const saving = ref(false)
 const submitError = ref('')
 const addressOptions = ref<SavedItem[]>([])
 const cargoOptions = ref<SavedItem[]>([])
 const addressChoices = computed(() => addressOptions.value.map(({ id, title }) => ({ id, name: title })))
 const cargoChoices = computed(() => cargoOptions.value.map(({ id, title }) => ({ id, name: title })))
-const presetError = ref('')
-const requestId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
+const presetsLoading = ref(false)
+const presetError = ref(false)
+const removeOpen = ref(false)
+const pendingRemoval = ref<{ id: number; label: string }>()
+let requestId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
 const maxCargoLines = 12
 const dirty = computed(() => Boolean(
   stationIds.sender || stationIds.receiver || remark.value ||
   Object.values(contacts).some((contact) => contact.name || contact.phone || contact.address) ||
-  lines.value.some((line) => line.name || line.quantity || line.weightKg || line.volumeM3)
+  lines.value.some(hasCargoDetails)
 ))
 let allowLeave = false
-let confirmOpen = false
+const leaveOpen = ref(false)
+let resolveLeave: ((confirmed: boolean) => void) | undefined
+const draftRecovered = ref(false)
+let loadedDraftOwner: string | undefined
+let unloaded = false
 
 onShow(() => {
   if (!auth.guard() || auth.staff) return
+  // #ifdef H5
+  if (draftOwner.value && !loadedDraftOwner) {
+    loadedDraftOwner = draftOwner.value
+    const draft = takeShipmentDraft(loadedDraftOwner)
+    if (draft) {
+      requestId = draft.requestId
+      Object.assign(stationIds, draft.stationIds)
+      Object.assign(contacts, draft.contacts)
+      lines.value = draft.cargo
+      nextLineId = Math.max(...draft.cargo.map((line) => line.id))
+      remark.value = draft.remark
+      remarkOpen.value = draft.remarkOpen
+      draftRecovered.value = true
+    }
+  }
+  // #endif
   if (!stationOptions.value) void loadOptions()
   void loadSavedItems()
 })
 
 async function loadSavedItems() {
-  const [addresses, cargo] = await Promise.allSettled([savedItems('address'), savedItems('cargo')])
-  if (addresses.status === 'fulfilled') addressOptions.value = addresses.value
-  if (cargo.status === 'fulfilled') cargoOptions.value = cargo.value
-  presetError.value = addresses.status === 'rejected' || cargo.status === 'rejected' ? '常用资料暂时无法加载。' : ''
+  if (presetsLoading.value) return
+  presetsLoading.value = true
+  try {
+    const [addresses, cargo] = await Promise.allSettled([savedItems('address'), savedItems('cargo')])
+    if (addresses.status === 'fulfilled') addressOptions.value = addresses.value
+    if (cargo.status === 'fulfilled') cargoOptions.value = cargo.value
+    presetError.value = addresses.status === 'rejected' || cargo.status === 'rejected'
+  } finally {
+    presetsLoading.value = false
+  }
 }
 
 function confirmBack() {
+  if (saving.value) return Promise.resolve(false)
   if (allowLeave || !dirty.value) return Promise.resolve(true)
-  if (saving.value || confirmOpen) return Promise.resolve(false)
-  confirmOpen = true
+  if (leaveOpen.value) return Promise.resolve(false)
   return new Promise<boolean>((resolve) => {
-    uni.showModal({
-      title: '离开发货委托？',
-      content: '本页已填写的信息会丢失。',
-      confirmText: '离开',
-      confirmColor: MOBILE_DANGER_COLOR,
-      success: ({ confirm }) => {
-        allowLeave = confirm
-        resolve(confirm)
-      },
-      fail: () => resolve(false),
-      complete: () => { confirmOpen = false }
-    })
+    resolveLeave = resolve
+    leaveOpen.value = true
   })
 }
 
+function settleLeave(confirmed: boolean) {
+  allowLeave = confirmed
+  resolveLeave?.(confirmed)
+  resolveLeave = undefined
+}
+
+onUnload(() => {
+  unloaded = true
+  // #ifdef H5
+  if (loadedDraftOwner && draftOwner.value === loadedDraftOwner && !allowLeave && dirty.value) {
+    rememberShipmentDraft(loadedDraftOwner, {
+      requestId,
+      stationIds: { ...stationIds },
+      contacts: { sender: { ...contacts.sender }, receiver: { ...contacts.receiver } },
+      cargo: lines.value.map((line) => ({ ...line })),
+      remark: remark.value,
+      remarkOpen: remarkOpen.value
+    })
+  }
+  // #endif
+  if (resolveLeave) settleLeave(false)
+})
+
 // #ifdef H5
 onBackPress(() => {
-  if (allowLeave || !dirty.value) return false
+  if (!saving.value && (allowLeave || !dirty.value)) return false
   void confirmBack().then((confirmed) => { if (confirmed) uni.navigateBack() })
   return true
 })
@@ -111,14 +167,50 @@ function fillAddress(side: 'sender' | 'receiver', id: string) {
   Object.assign(contacts[side], entry.contact)
 }
 
-function fillCargo(line: ReturnType<typeof blankLine>, id: string) {
+function fillCargo(line: ShipmentFormCargo, id: string) {
   const item = cargoOptions.value.find((option) => option.id === id)
   if (!item) return
   line.name = item.title
 }
 
+function hasCargoDetails(line: ShipmentFormCargo) {
+  return Boolean(line.name.trim() || line.quantity || line.weightKg || line.volumeM3)
+}
+
+function addLine() {
+  if (saving.value || lines.value.length >= maxCargoLines) return
+  const line = blankLine()
+  lines.value.push(line)
+  void revealControl(`cargo-${line.id}-name`)
+}
+
+function openRemark() {
+  remarkOpen.value = true
+  void revealControl('shipment-remark')
+}
+
+function requestRemoval(line: ShipmentFormCargo, index: number) {
+  if (saving.value || lines.value.length < 2) return
+  if (!hasCargoDetails(line)) {
+    removeLine(line.id)
+    return
+  }
+  pendingRemoval.value = { id: line.id, label: line.name.trim() || `货物 ${index + 1}` }
+  removeOpen.value = true
+}
+
 function removeLine(id: number) {
-  if (lines.value.length > 1) lines.value = lines.value.filter((line) => line.id !== id)
+  const index = lines.value.findIndex((line) => line.id === id)
+  if (index < 0 || lines.value.length < 2) return
+  const neighbor = lines.value[index + 1] || lines.value[index - 1]
+  lines.value = lines.value.filter((line) => line.id !== id)
+  fieldsToValidate.value = fieldsToValidate.value.filter((field) => !field.startsWith(`cargo-${id}-`))
+  void revealControl(lines.value.length > 1 && neighbor ? `cargo-${neighbor.id}-remove` : 'shipment-add-cargo')
+}
+
+function confirmRemoval() {
+  if (pendingRemoval.value) removeLine(pendingRemoval.value.id)
+  pendingRemoval.value = undefined
 }
 
 function validate() {
@@ -127,7 +219,8 @@ function validate() {
     const contact = normalizeContact(contacts[side.id])
     if (!stationIds[side.id]) next[`${side.id}-station`] = `请选择${side.label}站点。`
     if (!contact.name) next[`${side.id}-name`] = '请输入联系人。'
-    if (!isContactPhone(contact.phone)) next[`${side.id}-phone`] = '请输入有效联系电话。'
+    if (!contact.phone) next[`${side.id}-phone`] = '请输入联系电话。'
+    else if (!isContactPhone(contact.phone)) next[`${side.id}-phone`] = '请检查电话号码。'
     if (!contact.address) next[`${side.id}-address`] = '请输入详细地址。'
   }
   for (const line of lines.value) {
@@ -147,18 +240,13 @@ function validate() {
 async function submit() {
   if (saving.value || !stationOptions.value?.length) return
   submitError.value = ''
-  validationActive.value = true
-  const first = Object.keys(errors.value)[0]
+  fieldsToValidate.value = Object.keys(validate())
+  const first = fieldsToValidate.value[0]
   if (first) {
     focused.value = ''
     await nextTick()
     focused.value = first
-    uni.pageScrollTo({ selector: `#${first}`, duration: 0, offsetTop: 16 })
-    // #ifdef H5
-    const control = document.getElementById(first)
-    const focusTarget = control instanceof HTMLSelectElement ? control : control?.querySelector<HTMLElement>('input, textarea')
-    focusTarget?.focus({ preventScroll: true })
-    // #endif
+    await revealControl(first)
     return
   }
 
@@ -176,6 +264,10 @@ async function submit() {
   saving.value = true
   try {
     const result = await create(requestId, draft)
+    if (unloaded) {
+      clearShipmentDraft(requestId)
+      return
+    }
     allowLeave = true
     uni.redirectTo({ url: `/pages/order/detail?id=${encodeURIComponent(result.id)}&created=1` })
   } catch (cause) {
@@ -188,30 +280,31 @@ async function submit() {
 
 <template>
   <wd-config-provider :theme="'tms-' + theme.preset">
-  <MobileWorkspace class="page shipper-page" :class="themeName">
+  <MobileWorkspace :container-class="['page shipper-page mobile-workspace--sticky-dock', themeName]">
     <MobileTopBar capsule="always" title="发货委托" :eyebrow="demo ? '演示模式' : undefined" show-back :confirm-back="confirmBack" />
     <view v-if="auth.staff" class="shipper-content">
       <text class="shipper-copy">请从发货入口进入 Web TMS 开单。</text>
     </view>
     <TmsPageSkeleton v-else-if="!stationOptions" label="正在加载可用站点…" :error="optionsError" @retry="loadOptions" />
     <view v-else-if="!stationOptions.length" class="shipper-content">
-      <view class="card shipper-empty">
-        <view class="shipper-empty__icon"><TmsIcon name="location" size="46rpx" /></view>
-        <text class="section-title">暂无可用站点</text>
-        <text class="shipper-copy">请联系服务商启用可用站点。</text>
-      </view>
+      <MobileEmptyState class="shipper-card" icon="location" title="暂无可用站点"
+        description="请联系服务商启用可用站点。" />
     </view>
-    <view v-else class="shipper-content shipment-form mobile-content-with-dock" role="main">
+    <view v-else class="shipper-content shipment-form" role="main">
+      <view v-if="draftRecovered" class="shipment-recovery mobile-inline-pair mobile-inline-pair--start" role="status">
+        <view class="mobile-inline-pair__icon"><MobileIcon name="check" size="16px" /></view>
+        <text>已恢复上次未提交的发货内容。</text>
+      </view>
       <text class="shipment-required shipper-copy"><text aria-hidden="true">*</text> 为必填项</text>
-      <view v-if="presetError" class="shipper-heading shipment-notice" role="status">
-        <text class="shipper-copy">{{ presetError }}你仍可手动填写。</text>
-        <MobileAction class="shipper-inline" @click="loadSavedItems">重试</MobileAction>
+      <view v-if="presetsLoading || presetError" class="shipper-heading shipment-notice">
+        <text class="shipper-copy" role="status">{{ presetsLoading ? '正在加载常用资料…' : '常用资料暂时无法加载，仍可手动填写。' }}</text>
+        <MobileAction v-if="presetError" class="shipper-inline" :disabled="presetsLoading" @click="loadSavedItems">重试</MobileAction>
       </view>
       <view v-for="side in sides" :key="side.id" class="shipment-group">
         <view class="shipper-heading shipment-group__header">
-          <view class="shipment-group__heading">
-            <TmsIcon :name="side.icon" size="18px" />
-            <text class="section-title" role="heading" aria-level="2">{{ side.label }}信息</text>
+          <view class="mobile-inline-pair shipment-group__heading">
+            <MobileIcon :name="side.icon" size="18px" align-to-label />
+            <text class="mobile-inline-pair__label section-title" role="heading" aria-level="2">{{ side.label }}信息</text>
           </view>
           <MobileSelect
             v-if="addressChoices.length" :options="addressChoices" :label="`${side.label}使用常用地址`"
@@ -249,9 +342,9 @@ async function submit() {
 
       <view class="shipment-group">
         <view class="shipper-heading shipment-group__header">
-          <view class="shipment-group__heading">
-            <TmsIcon name="box" size="18px" />
-            <text class="section-title" role="heading" aria-level="2">货物明细</text>
+          <view class="mobile-inline-pair shipment-group__heading">
+            <MobileIcon name="box" size="18px" align-to-label />
+            <text class="mobile-inline-pair__label section-title" role="heading" aria-level="2">货物明细</text>
           </view>
           <text class="shipper-copy shipment-count" role="status">{{ lines.length }} 种货物</text>
         </view>
@@ -265,8 +358,9 @@ async function submit() {
                   :disabled="saving" compact @select="fillCargo(line, $event)"
                 />
                 <MobileAction
-                  v-if="lines.length > 1" class="shipper-inline shipment-remove" :aria-label="`移除货物 ${index + 1}`"
-                  :disabled="saving" @click="removeLine(line.id)"
+                  v-if="lines.length > 1" :id="`cargo-${line.id}-remove`"
+                  class="shipper-inline shipment-remove" :aria-label="`移除货物 ${index + 1}`"
+                  :disabled="saving" @click="requestRemoval(line, index)"
                 >移除</MobileAction>
               </view>
             </view>
@@ -293,32 +387,62 @@ async function submit() {
             </view>
           </view>
           <MobileAction
-            v-if="lines.length < maxCargoLines" class="shipper-inline shipment-add" :disabled="saving"
-            @click="lines.push(blankLine())"
-          ><TmsIcon name="add" size="18px" /> 添加货物</MobileAction>
+            v-if="lines.length < maxCargoLines" id="shipment-add-cargo" class="shipper-inline shipment-add" :disabled="saving"
+            @click="addLine"
+          >
+            <MobileInlineLabel label="添加货物" icon="add" />
+          </MobileAction>
           <text v-else class="shipper-copy" role="status">已添加 {{ maxCargoLines }} 种货物，达到单次委托上限。</text>
         </view>
       </view>
 
-      <view class="shipper-card">
+      <view v-if="remarkOpen" class="shipper-card">
         <MobileField
           v-model="remark" field="shipment-remark" label="运输备注" placeholder="选填，注明取货时间或装卸要求…"
           :maxlength="500" :disabled="saving" multiline
         />
       </view>
-      <view class="mobile-dock" aria-label="发货委托操作">
-        <text v-if="submitError" id="submit-error" class="shipper-error" role="alert">{{ submitError }}</text>
-        <MobileAction class="tms-primary-action mobile-dock__action" :aria-busy="saving" :disabled="saving" @click="submit">
-          {{ saving ? '正在提交…' : '提交发货委托' }}
+      <view v-else class="mobile-group">
+        <MobileAction class="mobile-row" :disabled="saving" @click="openRemark">
+          <view class="mobile-row__icon"><MobileIcon name="document" size="17px" /></view>
+          <view class="mobile-row__body">
+            <text class="mobile-row__label">添加运输备注</text>
+            <text class="mobile-row__detail">选填 · 取货时间、装卸要求等</text>
+          </view>
+          <MobileIcon class="mobile-row__chevron" name="add" size="16px" />
         </MobileAction>
       </view>
     </view>
+    <view v-if="!auth.staff && stationOptions?.length" class="mobile-dock mobile-dock--sticky" aria-label="发货委托操作">
+      <text v-if="submitError" id="submit-error" class="mobile-dock__note mobile-dock__note--error" role="alert">{{ submitError }}</text>
+      <MobileAction class="tms-primary-action mobile-dock__action" :aria-busy="saving" :disabled="saving" @click="submit">
+        {{ saving ? '正在提交…' : '提交发货委托' }}
+      </MobileAction>
+    </view>
+    <MobileConfirmDialog
+      v-model="leaveOpen" title="离开发货委托？" message="本页已填写的信息会丢失。"
+      confirm-text="离开" @confirm="settleLeave(true)" @cancel="settleLeave(false)"
+    />
+    <MobileConfirmDialog
+      v-model="removeOpen" title="移除这项货物？" confirm-text="移除"
+      :message="pendingRemoval ? `「${pendingRemoval.label}」的填写内容会丢失。` : undefined"
+      @confirm="confirmRemoval" @cancel="pendingRemoval = undefined"
+    />
   </MobileWorkspace>
   </wd-config-provider>
 </template>
 
 <style scoped lang="scss">
-.shipment-form { gap: 20px; }
+.shipment-form { gap: 20px; padding-bottom: 24px; }
+.shipment-recovery {
+  --mobile-inline-pair-gap: 8px;
+  padding: 12px 16px;
+  border-radius: var(--tms-control-radius);
+  background: var(--tms-primary-soft);
+  color: var(--tms-primary-strong);
+  font-size: 14px;
+  line-height: 1.5;
+}
 .shipment-required text { color: var(--tms-red-strong); }
 .shipment-notice {
   padding: 0 12px;
@@ -330,10 +454,7 @@ async function submit() {
 .shipment-group { display: grid; min-width: 0; gap: 7px; }
 .shipment-group__header { min-height: 44px; padding-inline: 4px 0; }
 .shipment-group__heading {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
+  --mobile-inline-pair-gap: 8px;
   color: var(--mobile-workspace-accent);
 }
 

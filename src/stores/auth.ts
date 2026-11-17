@@ -1,8 +1,10 @@
 import { defineStore } from 'pinia'
+import { redirectToLogin } from '@mobile-core/login-navigation'
 import { fetchShipperProfile } from '@/api/shipper'
 import { fetchStaffButtons, fetchStaffMenus } from '@/api/staff'
-import { ApiError, demoEnabled, loginWithPassword, refreshToken, revokeSession } from '@/api/supabase'
+import { ApiError, bindWechatPhoneCode, demoEnabled, exchangeWechatPhoneCode, loginWithPassword, refreshToken, revokeSession } from '@/api/supabase'
 import type { Session } from '@/api/types'
+import { clearShipmentDraft } from '@/utils/shipment-draft'
 import { workspace, type WorkspaceKey } from '@/utils/workspace'
 
 const SESSION_KEY = 'tms-shipper-session'
@@ -13,6 +15,13 @@ let refreshing: { token: string; promise: Promise<Session> } | null = null
 function useExpiry(session: Session) {
   return { ...session, expires_at: session.expires_at || Math.floor(Date.now() / 1000) + session.expires_in }
 }
+
+function permitsWorkspace(key: WorkspaceKey, menus: string[], buttons: string[]) {
+  const entry = workspace(key)
+  return menus.includes(entry.menu) && (!entry.permission || buttons.includes(entry.permission))
+}
+
+const fetchStaffAccess = (token: string) => Promise.all([fetchStaffMenus(token), fetchStaffButtons(token)])
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -50,7 +59,7 @@ export const useAuthStore = defineStore('auth', {
     guard() {
       this.hydrate()
       if (this.active) return true
-      uni.reLaunch({ url: '/pages/login/index' })
+      redirectToLogin()
       return false
     },
     saveSession(session: Session) {
@@ -58,6 +67,7 @@ export const useAuthStore = defineStore('auth', {
       uni.setStorageSync(SESSION_KEY, JSON.stringify(this.session))
     },
     clear() {
+      clearShipmentDraft()
       this.session = null
       this.demo = false
       this.staff = false
@@ -68,7 +78,16 @@ export const useAuthStore = defineStore('auth', {
       uni.removeStorageSync(STAFF_KEY)
     },
     async login(account: string, password: string) {
-      const session = await loginWithPassword(account, password)
+      await this.completeSignIn(await loginWithPassword(account, password))
+    },
+    async loginWithWechatPhone(phoneCode: string) {
+      await this.completeSignIn(await exchangeWechatPhoneCode(phoneCode))
+    },
+    async bindWechatPhone(phoneCode: string) {
+      // WeChat authorization codes are single use. After a failed request, require fresh authorization.
+      await this.authenticated((token) => bindWechatPhoneCode(phoneCode, token), { retryUnauthorized: false })
+    },
+    async completeSignIn(session: Session) {
       let menus: string[] = []
       let buttons: string[] = []
       try {
@@ -93,16 +112,20 @@ export const useAuthStore = defineStore('auth', {
     },
     permits(key: WorkspaceKey) {
       if (this.demo) return true
-      const entry = workspace(key)
-      return this.staff && this.staffMenus.includes(entry.menu) &&
-        (!entry.permission || this.staffButtons.includes(entry.permission))
+      return this.staff && permitsWorkspace(key, this.staffMenus, this.staffButtons)
+    },
+    async checkWorkspaceAccess(key: WorkspaceKey) {
+      if (this.demo || !this.staff) return this.permits(key)
+      const userId = this.session?.user?.id
+      if (!userId) return false
+      // Workspace entry is a fresh check; in-flight reads must not replace the menu cache.
+      const [menus, buttons] = await this.authenticated(fetchStaffAccess)
+      return this.staff && this.session?.user?.id === userId && permitsWorkspace(key, menus, buttons)
     },
     async loadStaffAccess() {
       if (!this.staff || this.staffMenus.length) return
       const userId = this.session?.user?.id
-      const [menus, buttons] = await this.authenticated((token) =>
-        Promise.all([fetchStaffMenus(token), fetchStaffButtons(token)])
-      )
+      const [menus, buttons] = await this.authenticated(fetchStaffAccess)
       if (this.staff && this.session?.user?.id === userId) {
         this.staffMenus = menus
         this.staffButtons = buttons
@@ -138,7 +161,7 @@ export const useAuthStore = defineStore('auth', {
       refreshing = { token: previous.refresh_token, promise }
       return promise
     },
-    async authenticated<T>(operation: (token: string) => Promise<T>): Promise<T> {
+    async authenticated<T>(operation: (token: string) => Promise<T>, { retryUnauthorized = true } = {}): Promise<T> {
       if (!this.guard() || !this.session) throw new ApiError(401, '')
       const session = (this.session.expires_at || 0) * 1000 - Date.now() < 60_000
         ? await this.refresh()
@@ -146,7 +169,7 @@ export const useAuthStore = defineStore('auth', {
       try {
         return await operation(session.access_token)
       } catch (error) {
-        if (!(error instanceof ApiError) || error.status !== 401 || !this.session) throw error
+        if (!retryUnauthorized || !(error instanceof ApiError) || error.status !== 401 || !this.session) throw error
         const next = this.session.access_token === session.access_token ? await this.refresh() : this.session
         return operation(next.access_token)
       }
@@ -155,7 +178,7 @@ export const useAuthStore = defineStore('auth', {
       const token = this.session?.access_token
       this.clear()
       if (token) void revokeSession(token).catch(() => undefined)
-      uni.reLaunch({ url: '/pages/login/index' })
+      redirectToLogin()
     }
   }
 })

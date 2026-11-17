@@ -1,6 +1,6 @@
 import { ApiError } from './supabase'
 import type {
-  CustomerStatementDetail, Dashboard, OrderBatch, OrderDetail, OrderList, OrderQuery,
+  CustomerStatementCursor, CustomerStatementDetail, CustomerStatementPage, Dashboard, OrderBatch, OrderDetail, OrderList, OrderQuery,
   SavedItem, SavedItemInput, SavedItemKind, ShipmentCargo, ShipmentDraft, ShipperProfile, Station
 } from './types'
 import { orderGroup } from '@/utils/orders'
@@ -108,9 +108,9 @@ export const demoApi = {
     saved[kind] = saved[kind].filter((item) => item.id !== id)
     return true
   },
-  async statements() {
+  async statementsPage(cursor: CustomerStatementCursor | null): Promise<CustomerStatementPage> {
     const { lines, ...row } = statement
-    return [row]
+    return { items: cursor ? [] : [row], nextCursor: null }
   },
   async statement(id: string) {
     if (id !== statement.id) throw new ApiError(404, 'SHIPPER_RECORD_NOT_FOUND')

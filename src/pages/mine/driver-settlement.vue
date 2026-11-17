@@ -2,12 +2,13 @@
 import MobileWorkspace from '@mobile-core/components/MobileWorkspace.vue'
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { fetchDriverLedger, fetchReconciliationDrivers, type DriverLedgerKind, type ReconciliationDriver } from '@/api/staff'
+import { fetchDriverLedger, fetchReconciliationDrivers, STAFF_PAGE_SIZE, type DriverLedgerKind, type ReconciliationDriver } from '@/api/staff'
 import { usePageResource } from '@/composables/useShipper'
 import { usePageTheme } from '@/composables/usePageTheme'
 import { useAuthStore } from '@/stores/auth'
 import { openWorkspace } from '@/utils/workspace'
 import MobileAction from '@mobile-core/components/MobileAction.vue'
+import MobileEmptyState from '@mobile-core/components/MobileEmptyState.vue'
 import MobileIcon from '@mobile-core/components/MobileIcon.vue'
 import MobileSearch from '@mobile-core/components/MobileSearch.vue'
 import MobileSegmented from '@mobile-core/components/MobileSegmented.vue'
@@ -23,6 +24,7 @@ const categories: Array<{ key: DriverLedgerKind; label: string; permission: stri
 ]
 const { themeName } = usePageTheme()
 const auth = useAuthStore()
+const searchDraft = ref('')
 const keyword = ref('')
 const driver = ref<ReconciliationDriver>()
 const driverOffset = ref(0)
@@ -32,31 +34,41 @@ const visibleCategories = computed(() => categories.filter((item) => auth.demo |
 const categoryOptions = computed(() => visibleCategories.value.map(({ key, label }) => ({ value: key, label })))
 
 const drivers = usePageResource(async () => {
+  const query = keyword.value
+  const offset = driverOffset.value
   await auth.loadStaffAccess()
   if (!auth.permits('driverSettlement')) return { records: [], total: 0 }
   if (auth.demo) {
-    const rows = [{ id: 'demo-driver', driver_name: '演示司机' }].filter((item) => item.driver_name.includes(keyword.value))
+    const rows = [{ id: 'demo-driver', driver_name: '演示司机' }].filter((item) => item.driver_name.includes(query))
     return { records: rows, total: rows.length }
   }
-  return auth.authenticated((token) => fetchReconciliationDrivers(token, keyword.value.trim(), driverOffset.value))
+  return auth.authenticated((token) => fetchReconciliationDrivers(token, query, offset))
 }, '司机资料加载失败，请重新加载。')
 const ledger = usePageResource(async () => {
   const id = driver.value?.id
   if (!id) return { records: [], total: 0 }
+  const kind = category.value
+  const offset = ledgerOffset.value
   if (auth.demo) {
-    return category.value === 'waybill' ? {
+    return kind === 'waybill' ? {
       total: 1, records: [{ id: 'demo-cost', number: 'FY-DEMO-001', occurredOn: '2026-11-14', amount: 85.5, note: '过路费', waybillNo: 'YD-DEMO-001-01' }]
     } : { records: [], total: 0 }
   }
-  return auth.authenticated((token) => fetchDriverLedger(token, id, category.value, ledgerOffset.value))
+  return auth.authenticated((token) => fetchDriverLedger(token, id, kind, offset))
 }, '费用流水加载失败，请重新加载。')
-const activeTotal = computed(() => (driver.value ? ledger.data.value : drivers.data.value)?.total ?? 0)
+const activeResource = computed(() => driver.value ? ledger : drivers)
+const activeOffset = computed(() => driver.value ? ledgerOffset.value : driverOffset.value)
+const currentPage = computed(() => Math.floor(activeOffset.value / STAFF_PAGE_SIZE) + 1)
+const pageCount = computed(() => Math.ceil((activeResource.value.data.value?.total ?? 0) / STAFF_PAGE_SIZE))
 
 onShow(() => { if (auth.guard() && !driver.value) void drivers.load() })
 
 function search() {
-  if (drivers.busy.value) return
+  const next = searchDraft.value.trim()
+  if (drivers.busy.value && keyword.value === next && !driverOffset.value) return
+  keyword.value = next
   driverOffset.value = 0
+  drivers.reset()
   void drivers.load()
 }
 
@@ -66,6 +78,17 @@ function choose(row: ReconciliationDriver) {
   if (first) loadCategory(first.key)
 }
 
+function clearDriver() {
+  driver.value = undefined
+  ledger.reset()
+}
+
+async function confirmBack() {
+  if (!driver.value) return true
+  clearDriver()
+  return false
+}
+
 function loadCategory(key: DriverLedgerKind) {
   if (ledger.busy.value) return
   category.value = key
@@ -73,38 +96,45 @@ function loadCategory(key: DriverLedgerKind) {
   void ledger.load()
 }
 
-function paginate(step: number) {
+function paginate(step: -1 | 1) {
+  const next = currentPage.value + step
+  if (activeResource.value.busy.value || next < 1 || next > pageCount.value) return
   const offset = driver.value ? ledgerOffset : driverOffset
-  const resource = driver.value ? ledger : drivers
-  if (resource.busy.value) return
-  offset.value += step * 20
-  void resource.load()
+  offset.value = (next - 1) * STAFF_PAGE_SIZE
+  void activeResource.value.load()
 }
 
 </script>
 
 <template>
-  <MobileWorkspace class="page shipper-page" :class="themeName">
-    <MobileTopBar capsule="always" title="司机对账" :eyebrow="auth.demo ? '演示模式' : undefined" show-back />
+  <MobileWorkspace :container-class="['page shipper-page', themeName]">
+    <MobileTopBar
+      capsule="always" :title="driver ? '司机费用流水' : '司机对账'"
+      :eyebrow="auth.demo ? '演示模式' : undefined"
+      show-back back-fallback="/pages/mine/index" :confirm-back="confirmBack"
+    />
     <view class="shipper-content" role="main">
       <template v-if="!driver">
         <view>
           <text class="mobile-group-title" role="heading" aria-level="2">选择司机</text>
-          <MobileSearch v-model="keyword" name="driver-name" label="搜索司机姓名" placeholder="搜索司机姓名…" @submit="search" @clear="search" />
+          <MobileSearch
+            v-model="searchDraft" name="driver-name" label="搜索司机姓名" placeholder="搜索司机姓名…"
+            @submit="search" @clear="search"
+          />
         </view>
         <TmsPageSkeleton v-if="drivers.busy.value || drivers.error.value" :error="drivers.error.value" @retry="drivers.load" />
         <view v-else-if="drivers.data.value?.records.length" class="mobile-group">
-          <MobileAction v-for="row in drivers.data.value.records" :key="row.id" class="mobile-row ledger-driver" @click="choose(row)">
+          <MobileAction v-for="row in drivers.data.value.records" :key="row.id" class="mobile-row" @click="choose(row)">
             <view class="mobile-row__icon"><MobileIcon name="user" size="17px" /></view>
             <text class="mobile-row__body mobile-row__label">{{ row.driver_name || '未命名司机' }}</text>
             <MobileIcon class="mobile-row__chevron" name="chevron" size="14px" />
           </MobileAction>
         </view>
-        <view v-else class="shipper-empty">
-          <view class="shipper-empty__icon"><MobileIcon name="user" size="22px" /></view>
-          <text class="section-title">{{ auth.permits('driverSettlement') ? '没有符合条件的司机' : '当前账号没有查询权限' }}</text>
-          <text v-if="!auth.permits('driverSettlement')" class="shipper-copy">请联系管理员开通司机综合查询权限。</text>
-        </view>
+        <MobileEmptyState
+          v-else class="shipper-card" icon="user"
+          :title="auth.permits('driverSettlement') ? '没有符合条件的司机' : '当前账号没有查询权限'"
+          :description="auth.permits('driverSettlement') ? '试试其他姓名或清除筛选。' : '请联系管理员开通司机综合查询权限。'"
+        />
       </template>
       <template v-else>
         <view class="mobile-group">
@@ -114,7 +144,7 @@ function paginate(step: number) {
               <text class="mobile-row__detail">当前司机</text>
               <text class="mobile-row__label">{{ driver.driver_name || '未命名司机' }}</text>
             </view>
-            <MobileAction class="shipper-inline ledger-change-driver" :disabled="ledger.busy.value" @click="driver = undefined">
+            <MobileAction class="shipper-inline ledger-change-driver" @click="clearDriver">
               更换司机
             </MobileAction>
           </view>
@@ -128,28 +158,30 @@ function paginate(step: number) {
         <TmsPageSkeleton v-if="ledger.busy.value || ledger.error.value" :error="ledger.error.value" @retry="ledger.load" />
         <template v-else-if="visibleCategories.length">
           <view v-if="ledger.data.value?.records.length" class="mobile-group">
-            <view v-for="row in ledger.data.value.records" :key="row.id" class="mobile-row mobile-row--static ledger-row">
+            <view v-for="row in ledger.data.value.records" :key="row.id" class="mobile-row mobile-row--static mobile-row--stack-amount">
               <view class="mobile-row__body">
                 <text class="mobile-row__label">{{ row.number || '费用记录' }}</text>
                 <text v-if="row.occurredOn || row.waybillNo || row.note" class="mobile-row__detail">
                   {{ [row.occurredOn, row.waybillNo, row.note].filter(Boolean).join(' · ') }}
                 </text>
               </view>
-              <text class="mobile-row__trailing ledger-amount">{{ formatCnyAmount(row.amount) }}</text>
+              <text class="mobile-row__trailing mobile-amount">{{ formatCnyAmount(row.amount) }}</text>
             </view>
           </view>
-          <view v-else class="shipper-empty">
-            <view class="shipper-empty__icon"><MobileIcon name="receipt" size="22px" /></view>
-            <text class="section-title">该司机暂无此类费用记录。</text>
-          </view>
+          <MobileEmptyState v-else class="shipper-card" icon="receipt" title="该司机暂无此类费用记录。" />
         </template>
       </template>
 
-      <view v-if="activeTotal > 20" class="shipper-heading">
-        <MobileAction class="shipper-inline" :disabled="!(driver ? ledgerOffset : driverOffset)" @click="paginate(-1)">上一页</MobileAction>
+      <view v-if="pageCount > 1" class="shipper-heading ledger-pagination" role="navigation" aria-label="结果分页">
         <MobileAction
           class="shipper-inline"
-          :disabled="(driver ? ledgerOffset : driverOffset) + 20 >= activeTotal"
+          :disabled="activeResource.busy.value || currentPage <= 1"
+          @click="paginate(-1)"
+        >上一页</MobileAction>
+        <text class="shipper-copy" role="status">第 {{ currentPage }} / {{ pageCount }} 页</text>
+        <MobileAction
+          class="shipper-inline"
+          :disabled="activeResource.busy.value || currentPage >= pageCount"
           @click="paginate(1)"
         >下一页</MobileAction>
       </view>
@@ -166,11 +198,5 @@ function paginate(step: number) {
 
 <style scoped lang="scss">
 .ledger-change-driver { flex-shrink: 0; }
-.ledger-amount {
-  max-width: 42%;
-  color: var(--mobile-workspace-ink);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
-}
+.ledger-pagination { flex-wrap: wrap; }
 </style>

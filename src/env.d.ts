@@ -6,4 +6,5 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_KEY?: string
   readonly VITE_TMS_WEB_URL?: string
   readonly VITE_ENABLE_DEMO?: string
+  readonly VITE_ENABLE_WECHAT_PHONE_LOGIN?: string
 }

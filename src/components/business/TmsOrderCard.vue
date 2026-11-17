@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { OrderSummary } from '@/api/types'
 import { formatTime, openOrder } from '@/utils/orders'
-import TmsIcon from './TmsIcon.vue'
+import MobileIcon from '@mobile-core/components/MobileIcon.vue'
 import TmsStatusTag from './TmsStatusTag.vue'
 import MobileAction from '@mobile-core/components/MobileAction.vue'
 import MobileRoute from '@mobile-core/components/MobileRoute.vue'
@@ -17,12 +17,15 @@ defineProps<{ order: OrderSummary }>()
       <text class="order-card__number" translate="no">{{ order.orderNo || '暂无订单号' }}</text>
       <TmsStatusTag :status="order.status" />
     </view>
-    <view class="order-card__route">
+    <view class="shipper-heading order-card__route">
       <MobileRoute :origin="order.origin || '发货地待确认'" :destination="order.destination || '收货地待确认'" />
-      <TmsIcon class="order-card__chevron" name="chevron" size="24rpx" aria-hidden="true" />
+      <MobileIcon class="order-card__chevron" name="chevron" size="24rpx" aria-hidden="true" />
     </view>
     <view class="order-card__foot">
-      <text class="shipper-copy order-card__cargo">{{ order.cargoName || '货物' }}<template v-if="order.cargoUnit"> · {{ order.cargoQuantity }} {{ order.cargoUnit }}</template></text>
+      <view class="shipper-copy order-card__cargo">
+        <text class="order-card__cargo-name">{{ order.cargoName || '货物' }}</text>
+        <text v-if="order.cargoUnit" class="order-card__quantity">· {{ order.cargoQuantity }} {{ order.cargoUnit }}</text>
+      </view>
       <text class="shipper-copy order-card__time">{{ formatTime(order.createdAt) }}</text>
     </view>
   </MobileAction>
@@ -49,25 +52,20 @@ defineProps<{ order: OrderSummary }>()
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
-.order-card__route {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-width: 0;
-  gap: 8px;
-}
-.order-card__chevron { flex: none; color: var(--mobile-workspace-muted); }
+.order-card__route { gap: 8px; }
+.order-card__chevron { color: var(--mobile-workspace-muted); }
 .order-card__foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 2px 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
   min-width: 0;
   padding-top: 8px;
   border-top: 1px solid var(--mobile-workspace-line);
 }
-.order-card__cargo { min-width: 0; }
+.order-card__cargo { display: flex; gap: 4px; min-width: 0; }
+.order-card__cargo-name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
+.order-card__quantity { flex: none; max-width: 55%; overflow-wrap: anywhere; }
 .order-card__time { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 @media (hover: hover) {

@@ -143,10 +143,17 @@ export interface OrderUpdate {
 export interface CustomerStatement {
   id: string
   number: string
-  periodStart: string
-  periodEnd: string
+  periodStart: string | null
+  periodEnd: string | null
   amount: number
   settled: number
+}
+
+export type CustomerStatementCursor = Pick<CustomerStatement, 'periodEnd' | 'id'>
+
+export interface CustomerStatementPage {
+  items: CustomerStatement[]
+  nextCursor: CustomerStatementCursor | null
 }
 
 export interface CustomerStatementDetail extends CustomerStatement {

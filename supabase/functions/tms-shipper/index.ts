@@ -8,7 +8,7 @@ const headers = {
 
 const actions = new Set([
   'profile', 'dashboard', 'list', 'detail', 'stations', 'create',
-  'messages', 'read_message', 'saved_items', 'save_item', 'delete_item', 'statements', 'statement_detail'
+  'messages', 'read_message', 'saved_items', 'save_item', 'delete_item', 'statements', 'statements_page', 'statement_detail'
 ])
 const errors: Record<string, [number, string]> = {
   42501: [403, 'SHIPPER_NOT_BOUND'],

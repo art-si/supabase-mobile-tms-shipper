@@ -1,0 +1,1 @@
+function e(e){if(null==e||"string"==typeof e&&!e.trim())return"—";const t=Number(e);if(!Number.isFinite(t))return"—";const i=t.toFixed(2),r=i.indexOf(".");return r<0?`¥${i}`:`¥${i.slice(0,r).replace(/\B(?=(\d{3})+(?!\d))/g,",")}${i.slice(r)}`}export{e as t};

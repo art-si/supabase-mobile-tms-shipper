@@ -21,8 +21,10 @@
     "navigationStyle": "custom",
     "navigationBarTitleText": "TMS 货主端",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#f5f5f7",
+    // #ifdef H5
     "rpxCalcMaxDeviceWidth": 430,
-    "rpxCalcBaseDeviceWidth": 375
+    "rpxCalcBaseDeviceWidth": 375,
+    // #endif
+    "backgroundColor": "#f5f5f7"
   }
 }

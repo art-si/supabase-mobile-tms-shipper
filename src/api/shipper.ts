@@ -1,6 +1,6 @@
 import { request } from './supabase'
 import type {
-  CustomerStatement, CustomerStatementDetail, Dashboard, OrderCreated, OrderDetail, OrderList, OrderQuery,
+  CustomerStatementCursor, CustomerStatementDetail, CustomerStatementPage, Dashboard, OrderCreated, OrderDetail, OrderList, OrderQuery,
   OrderUpdate, SavedItem, SavedItemInput, SavedItemKind, ShipmentDraft, ShipperProfile, Station
 } from './types'
 
@@ -20,7 +20,8 @@ export const saveItem = (token: string, kind: SavedItemKind, input: SavedItemInp
   shipperRequest<SavedItem>(token, 'save_item', { kind, ...input })
 export const deleteItem = (token: string, kind: SavedItemKind, id: string) =>
   shipperRequest<boolean>(token, 'delete_item', { kind, id })
-export const fetchStatements = (token: string) => shipperRequest<CustomerStatement[]>(token, 'statements')
+export const fetchStatementsPage = (token: string, cursor: CustomerStatementCursor | null) =>
+  shipperRequest<CustomerStatementPage>(token, 'statements_page', cursor ? { cursor } : {})
 export const fetchStatement = (token: string, id: string) =>
   shipperRequest<CustomerStatementDetail>(token, 'statement_detail', { id })
 

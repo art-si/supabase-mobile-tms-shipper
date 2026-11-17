@@ -2,6 +2,7 @@ import { request } from './supabase'
 
 interface PermissionRow { name: string; type?: string }
 const applications = ['tms', 'fms', 'vms']
+export const STAFF_PAGE_SIZE = 20
 
 function rpc<T>(token: string, fn: string, params: object = {}) {
   return request<T>(`/rest/v1/rpc/${fn}`, params, token)
@@ -39,7 +40,7 @@ export interface WorkbenchRow {
 
 export const fetchWorkbench = (token: string, mode: WorkbenchMode, from = 0) =>
   rpc<{ records: WorkbenchRow[]; total: number }>(token, 'tms_list_dispatch_workbench_secure', {
-    p_mode: mode, p_from: from, p_to: from + 19, p_count_only: false, p_filters: {}
+    p_mode: mode, p_from: from, p_to: from + STAFF_PAGE_SIZE - 1, p_count_only: false, p_filters: {}
   })
 
 export interface StaffMessage {
@@ -73,7 +74,7 @@ export interface ReconciliationDriver {
 
 export const fetchReconciliationDrivers = (token: string, keyword: string, from = 0) =>
   rpc<{ records: ReconciliationDriver[]; total: number }>(token, 'tms_list_drivers_secure', {
-    p_from: from, p_to: from + 19, p_keyword: keyword || null, p_purpose: 'list'
+    p_from: from, p_to: from + STAFF_PAGE_SIZE - 1, p_keyword: keyword || null, p_purpose: 'list'
   })
 
 export type DriverLedgerKind = 'waybill' | 'loan' | 'repayment' | 'reimbursement'
@@ -88,7 +89,7 @@ export interface DriverLedgerRow {
 }
 
 export async function fetchDriverLedger(token: string, driverId: string, kind: DriverLedgerKind, from = 0) {
-  const page = { p_driver_id: driverId, p_from: from, p_to: from + 19 }
+  const page = { p_driver_id: driverId, p_from: from, p_to: from + STAFF_PAGE_SIZE - 1 }
   if (kind === 'waybill') {
     const { records, total } = await rpc<{ records: Array<{
       id: string; cost_no: string | null; occurred_on: string | null; amount: number | string | null

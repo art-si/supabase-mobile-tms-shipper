@@ -2,6 +2,7 @@
 import { onShow } from '@dcloudio/uni-app'
 import MobileLogin from '@mobile-core/components/MobileLogin.vue'
 import { parseLoginAccount } from '@mobile-core/account'
+import { isWechatPhoneLoginEnabled, wechatPhoneLoginError } from '@mobile-core/wechat-phone-login'
 import { useAuthStore } from '@/stores/auth'
 import { usePageTheme } from '@/composables/usePageTheme'
 import { demoEnabled, hasSupabaseConfig, userMessage } from '@/api/supabase'
@@ -34,8 +35,12 @@ async function authenticate(account: string, password: string) {
   await auth.login(account, password)
 }
 
-function explainError(error: unknown) {
-  return userMessage(error, '登录失败，请检查账号与密码。')
+const authenticatePhone = isWechatPhoneLoginEnabled && hasSupabaseConfig
+  ? (code: string) => auth.loginWithWechatPhone(code)
+  : undefined
+
+function explainError(error: unknown, channel?: 'phone') {
+  return channel === 'phone' ? wechatPhoneLoginError(error) : userMessage(error, '登录失败，请检查账号与密码。')
 }
 
 function startDemo() {
@@ -56,6 +61,7 @@ function startDemo() {
       help-text="首次使用请联系物流服务商开通账号。"
       forgot-password-text="请联系物流服务商重置密码"
       :authenticate="authenticate"
+      :authenticate-phone="authenticatePhone"
       :explain-error="explainError"
       :validate-account="validateAccount"
       :demo="demoEnabled ? startDemo : undefined"

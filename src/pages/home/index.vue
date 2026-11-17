@@ -10,8 +10,11 @@ import type { OrderGroup } from '@/api/types'
 import TmsBottomNav from '@/components/business/TmsBottomNav.vue'
 import TmsAction from '@mobile-core/components/MobileAction.vue'
 import MobileTopBar from '@mobile-core/components/MobileTopBar.vue'
-import TmsIcon from '@/components/business/TmsIcon.vue'
-import TmsMetricGrid from '@/components/business/TmsMetricGrid.vue'
+import MobileIcon from '@mobile-core/components/MobileIcon.vue'
+import MobileInlineLabel from '@mobile-core/components/MobileInlineLabel.vue'
+import MobileMetricGrid from '@mobile-core/components/MobileMetricGrid.vue'
+import MobileEmptyState from '@mobile-core/components/MobileEmptyState.vue'
+import MobileSectionHeading from '@mobile-core/components/MobileSectionHeading.vue'
 import TmsOrderCard from '@/components/business/TmsOrderCard.vue'
 import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
 
@@ -26,11 +29,16 @@ const metrics = computed(() => {
   const counts = data.value?.counts
   if (!counts) return []
   return [
-    { key: 'pending' as OrderGroup, label: '待发运', value: counts.pending },
-    { key: 'in_progress' as OrderGroup, label: '履约中', value: counts.in_progress },
-    { key: 'signed' as OrderGroup, label: '已签收', value: counts.signed }
-  ]
+    { key: 'pending', label: '待发运', value: counts.pending },
+    { key: 'in_progress', label: '履约中', value: counts.in_progress },
+    { key: 'signed', label: '已签收', value: counts.signed }
+  ] satisfies { key: OrderGroup; label: string; value: number }[]
 })
+
+function selectMetric(index: number) {
+  const metric = metrics.value[index]
+  if (metric) openOrders(metric.key)
+}
 
 function refresh() { return auth.guard() ? load() : Promise.resolve() }
 function settings() { uni.navigateTo({ url: '/pages/settings/index' }) }
@@ -39,7 +47,7 @@ onPullDownRefresh(async () => { await refresh(); uni.stopPullDownRefresh() })
 </script>
 
 <template>
-  <MobileWorkspace class="page shipper-page" :class="themeName">
+  <MobileWorkspace :container-class="['page shipper-page shipper-home-page', themeName]">
     <MobileTopBar
       capsule="always"
       :title="auth.staff ? '物流工作台' : '发货工作台'"
@@ -50,55 +58,41 @@ onPullDownRefresh(async () => { await refresh(); uni.stopPullDownRefresh() })
 
     <view class="shipper-content shipper-content--tabbed home-content" role="main">
       <template v-if="auth.staff && !error">
-        <view class="home-section">
-          <text class="mobile-group-title" role="heading" aria-level="2">运输业务</text>
-          <view class="mobile-group">
-            <TmsAction class="mobile-row" @click="openOrders()">
-              <view class="mobile-row__icon"><TmsIcon name="waybill" size="19px" /></view>
-              <view class="mobile-row__body">
-                <text class="mobile-row__label">查看运单</text>
-                <text class="mobile-row__detail">待配载运输单和在途运单</text>
-              </view>
-              <TmsIcon class="mobile-row__chevron" name="arrow-right" size="16px" />
-            </TmsAction>
-            <TmsAction v-if="auth.permits('open')" class="mobile-row" @click="openWorkspace('open')">
-              <view class="mobile-row__icon"><TmsIcon name="add" size="19px" /></view>
-              <view class="mobile-row__body"><text class="mobile-row__label">发货开单</text></view>
-              <TmsIcon class="mobile-row__chevron" name="arrow-right" size="16px" />
+        <view class="mobile-group">
+          <view class="home-next">
+            <MobileSectionHeading title="运输业务" description="查看待配载运输单和在途运单。" />
+            <TmsAction class="tms-primary-action" @click="openOrders()">
+              <MobileInlineLabel icon="waybill" label="查看运单" />
             </TmsAction>
           </view>
+          <TmsAction v-if="auth.permits('open')" class="mobile-row home-secondary" @click="openWorkspace('open')">
+            <view class="mobile-row__icon" aria-hidden="true"><MobileIcon name="add" size="19px" /></view>
+            <view class="mobile-row__body"><text class="mobile-row__label">发货开单</text></view>
+            <MobileIcon class="mobile-row__chevron" name="chevron" size="14px" aria-hidden="true" />
+          </TmsAction>
         </view>
       </template>
       <template v-else-if="data">
-        <view class="home-section">
-          <view class="shipper-heading home-section__header">
-            <text class="mobile-group-title" role="heading" aria-level="2">订单概览</text>
-            <TmsAction class="shipper-inline" @click="openOrders()">全部订单 <TmsIcon name="arrow-right" size="14px" /></TmsAction>
-          </view>
-          <TmsMetricGrid :items="metrics" @select="openOrders" />
-        </view>
-
         <view class="mobile-group">
-          <TmsAction class="mobile-row" aria-label="我要发货" @click="openShipmentForm">
-            <view class="mobile-row__icon home-shipment__icon"><TmsIcon name="add" size="20px" /></view>
-            <view class="mobile-row__body">
-              <text class="mobile-row__label">我要发货</text>
-              <text class="mobile-row__detail">提交发货委托</text>
-            </view>
-            <TmsIcon class="mobile-row__chevron" name="arrow-right" size="16px" />
-          </TmsAction>
+          <view class="home-next">
+            <MobileSectionHeading title="发货委托" description="填写货物与收发信息，跟踪运输进度。" />
+            <TmsAction class="tms-primary-action" @click="openShipmentForm">
+              <MobileInlineLabel icon="add" label="我要发货" />
+            </TmsAction>
+          </view>
+          <view class="home-overview home-secondary">
+            <MobileSectionHeading title="订单概览" action-label="全部订单" @action="openOrders()" />
+            <MobileMetricGrid :items="metrics" selectable @select="selectMetric" />
+          </view>
         </view>
 
         <view class="home-section">
-          <text class="mobile-group-title" role="heading" aria-level="2">最近订单</text>
+          <MobileSectionHeading title="最近订单" />
           <view v-if="data.recent.length" class="shipper-stack">
             <TmsOrderCard v-for="order in data.recent" :key="order.id" :order="order" />
           </view>
-          <view v-else class="shipper-card shipper-empty">
-            <view class="shipper-empty__icon"><TmsIcon name="waybill" size="24px" /></view>
-            <text class="section-title">暂无订单</text>
-            <text class="shipper-copy">提交发货委托后，可在这里查看运输进度。</text>
-          </view>
+          <MobileEmptyState v-else class="shipper-card" icon="waybill" title="暂无订单"
+            description="提交发货委托后，可在这里查看运输进度。" />
         </view>
       </template>
       <TmsPageSkeleton v-else label="正在加载工作台…" :error="error" @retry="refresh" />
@@ -109,9 +103,20 @@ onPullDownRefresh(async () => { await refresh(); uni.stopPullDownRefresh() })
 </template>
 
 <style scoped lang="scss">
+.shipper-home-page { --mobile-header-subtitle-wrap: normal; }
 .home-content { row-gap: 20px; }
-.home-section { display: grid; gap: 9px; min-width: 0; }
-.home-section__header .mobile-group-title { margin-block: 0; }
-.home-section__header .shipper-inline { padding-inline-end: 2px; }
-.home-shipment__icon { background: var(--tms-primary); color: #fff; }
+.home-section { display: grid; gap: 8px; min-width: 0; }
+.home-next {
+  display: grid;
+  gap: 12px;
+  padding: var(--mobile-workspace-card-padding);
+}
+.home-secondary { border-top: 1px solid var(--mobile-workspace-line); }
+.home-overview {
+  --mobile-metric-grid-border: 0;
+  --mobile-metric-grid-background: transparent;
+  --mobile-metric-grid-radius: 0;
+  --mobile-metric-height: 64px;
+  padding: 4px var(--mobile-workspace-card-padding) 8px;
+}
 </style>
