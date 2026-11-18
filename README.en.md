@@ -20,8 +20,8 @@ Choose **进入演示** on the development login page to try shipment submission
 
 The workspace also includes shipment updates, saved goods and addresses, and confirmed customer statements. Staff use their existing TMS permissions for dispatch, split and merge, master data, and settlement. Set `VITE_TMS_WEB_URL` to connect the management workspaces.
 
-For a live environment, apply the migration to an existing Art Supabase TMS database, deploy the `tms-shipper` Edge Function, provision a dedicated Supabase Auth account and customer binding, and configure the client with the project URL and publishable key.
+For a live environment, use the database interfaces maintained by Art Supabase Pro, deploy the `tms-shipper` Edge Function, provision an account through User Management, and configure the client with the project URL and publishable key.
 
-WeChat phone sign-in is off by default. Register the shipper Mini Program's own AppID and phone capability, deploy the shared `mobile-wechat-auth` and shipper services to the same Supabase project, then set `VITE_ENABLE_WECHAT_PHONE_LOGIN=true` for the WeChat build. Customers and staff must first sign in with a password and authorize and link their WeChat phone number under My Account within 10 minutes. The existing customer or staff access check still applies on every sign-in. H5 continues to use password sign-in.
+Provision personal shipper accounts in Pro under User Management → Mobile Accounts. Each account belongs to one customer; an optional order owner enables shipment creation. WeChat phone sign-in uses Pro's canonical `mobile-wechat-auth` service. For current acceptance, the shipper shares the driver's WeChat AppID and server credentials until a complete shipper pair is configured. Enable `VITE_ENABLE_WECHAT_PHONE_LOGIN=true` in the WeChat build. First sign in with a password and bind the authorized phone under My Account within 10 minutes. Every subsequent login rechecks business access. H5 uses password sign-in. See the parent repository's `supabase/README.md` for setup.
 
 See the [Chinese README](README.md) for deployment and account setup.

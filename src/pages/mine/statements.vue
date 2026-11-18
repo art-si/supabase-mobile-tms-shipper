@@ -209,6 +209,6 @@ function showStatement(id: string) {
 .mobile-row.statement-row { padding-block: 14px; }
 .statement-route {
   --mobile-route-ink: var(--mobile-workspace-muted);
-  --mobile-route-size: max(24rpx, 12px);
+  --mobile-route-size: max(24rpx, 12px, .75rem);
 }
 </style>

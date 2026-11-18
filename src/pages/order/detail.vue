@@ -20,7 +20,6 @@ const { themeName } = usePageTheme()
 const { auth, demo, detail, shipmentReceipt } = useShipper()
 const id = ref('')
 const created = ref(false)
-const previewErrorBatch = ref('')
 const { data: order, error, load, reset } = usePageResource(
   () => id.value ? detail(id.value) : Promise.reject(new ApiError(404, 'SHIPPER_ORDER_NOT_FOUND')),
   '详情加载失败，请重新加载。'
@@ -46,7 +45,6 @@ function readQuery(query?: Record<string, unknown>) {
   created.value = query?.created === '1'
   if (id.value === nextId) return false
   id.value = nextId
-  previewErrorBatch.value = ''
   reset()
   return true
 }
@@ -57,19 +55,10 @@ watchMobilePageQuery('/pages/order/detail', (query) => {
 function refresh() { return auth.guard() ? load() : Promise.resolve() }
 onShow(refresh)
 onPullDownRefresh(async () => {
-  previewErrorBatch.value = ''
   await refresh()
   uni.stopPullDownRefresh()
 })
 
-function preview(batchId: string, urls: string[], index: number) {
-  previewErrorBatch.value = ''
-  uni.previewImage({
-    current: index,
-    urls,
-    fail: () => { previewErrorBatch.value = batchId }
-  })
-}
 
 function copyNumber(number: string) {
   uni.setClipboardData({
@@ -141,8 +130,7 @@ function copyNumber(number: string) {
               <text v-if="batch.signedQuantity !== null" class="shipper-copy">
                 签收 {{ batch.signedQuantity }} {{ order.cargoUnit || '' }}<template v-if="batch.exceptionQuantity"> · 异常 {{ batch.exceptionQuantity }} {{ order.cargoUnit || '' }}</template>
               </text>
-              <text v-if="previewErrorBatch === batch.id" class="shipper-error" role="alert">回单预览失败，请稍后重试。</text>
-              <MobileEvidence v-if="images.length" :images="images" label="回单" readonly @preview="preview(batch.id, images, $event)">
+              <MobileEvidence v-if="images.length" :images="images" label="回单" readonly>
                 <template #status="{ index }">
                   <text class="detail-receipt__caption" aria-hidden="true">回单 {{ index + 1 }}</text>
                 </template>
@@ -224,7 +212,7 @@ function copyNumber(number: string) {
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
-.detail-route { --mobile-route-size: clamp(20px, 5vw, 24px); }
+.detail-route { --mobile-route-size: max(1.25rem, clamp(20px, 5vw, 24px)); }
 .detail-time { font-variant-numeric: tabular-nums; }
 .detail-section-heading { margin-inline: 2px; }
 .detail-no-batch {

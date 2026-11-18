@@ -62,6 +62,25 @@ Deno.serve(async (request) => {
       return reply({ code: 'UNAUTHORIZED' }, 401)
     }
 
+    // Auth validates the token before its session claim is used. Mobile access also
+    // checks the live session so a password reset takes effect before JWT expiry.
+    const encoded = bearer.slice(7).split('.')[1]
+    let sessionId: unknown
+    try {
+      const claims: unknown = JSON.parse(atob(encoded.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(encoded.length / 4) * 4, '=')))
+      if (claims && typeof claims === 'object' && 'sub' in claims && claims.sub === identity.id && 'session_id' in claims) sessionId = claims.session_id
+    } catch { return reply({ code: 'UNAUTHORIZED' }, 401) }
+    if (typeof sessionId !== 'string' || !/^[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12}$/i.test(sessionId)) {
+      return reply({ code: 'UNAUTHORIZED' }, 401)
+    }
+    const activeSession = await fetch(`${url}/rest/v1/rpc/mobile_account_session_active`, {
+      method: 'POST',
+      headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_auth_user_id: identity.id, p_session_id: sessionId })
+    })
+    if (!activeSession.ok) return reply({ code: 'SHIPPER_UNAVAILABLE' }, 503)
+    if (await activeSession.json() !== true) return reply({ code: 'UNAUTHORIZED' }, 401)
+
     const result = await fetch(`${url}/rest/v1/rpc/tms_shipper_mobile`, {
       method: 'POST',
       headers: {

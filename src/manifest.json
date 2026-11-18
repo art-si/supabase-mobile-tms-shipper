@@ -9,7 +9,7 @@
     "router": { "mode": "hash" }
   },
   "mp-weixin": {
-    "appid": "",
+    "appid": "wx024c76d6303e71c6",
     "usingComponents": true,
     "mergeVirtualHostAttributes": true,
     "setting": { "urlCheck": true, "es6": true, "postcss": true, "minified": true }

@@ -18,9 +18,13 @@ import MobileSelect from '@mobile-core/components/MobileSelect.vue'
 import MobileTopBar from '@mobile-core/components/MobileTopBar.vue'
 import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
 import { revealControl } from '@mobile-core/form-focus'
+import { createLatestRequest } from '@mobile-core/latest-request'
 
 const { theme, themeName } = usePageTheme()
-const { auth, demo, stations, create, savedItems, shipmentOwner: draftOwner } = useShipper()
+const { auth, demo, profile, stations, create, savedItems, shipmentOwner: draftOwner } = useShipper()
+const canCreate = ref<boolean | null>(null)
+const accessError = ref('')
+const accessRequests = createLatestRequest()
 const { data: stationOptions, error: optionsError, load: loadOptions } =
   usePageResource(stations, '站点加载失败，请重新加载。')
 
@@ -77,8 +81,22 @@ const draftRecovered = ref(false)
 let loadedDraftOwner: string | undefined
 let unloaded = false
 
-onShow(() => {
+async function loadPage() {
   if (!auth.guard() || auth.staff) return
+  const isCurrent = accessRequests.start()
+  const owner = draftOwner.value
+  canCreate.value = null
+  accessError.value = ''
+  try {
+    const access = await profile()
+    if (unloaded || !isCurrent() || owner !== draftOwner.value) return
+    canCreate.value = access.canCreate
+    if (!canCreate.value) return
+  } catch (error) {
+    if (unloaded || !isCurrent() || owner !== draftOwner.value) return
+    accessError.value = userMessage(error, '发货权限检查失败，请重试。')
+    return
+  }
   // #ifdef H5
   if (draftOwner.value && !loadedDraftOwner) {
     loadedDraftOwner = draftOwner.value
@@ -97,7 +115,8 @@ onShow(() => {
   // #endif
   if (!stationOptions.value) void loadOptions()
   void loadSavedItems()
-})
+}
+onShow(() => { void loadPage() })
 
 async function loadSavedItems() {
   if (presetsLoading.value) return
@@ -130,6 +149,7 @@ function settleLeave(confirmed: boolean) {
 
 onUnload(() => {
   unloaded = true
+  accessRequests.invalidate()
   // #ifdef H5
   if (loadedDraftOwner && draftOwner.value === loadedDraftOwner && !allowLeave && dirty.value) {
     rememberShipmentDraft(loadedDraftOwner, {
@@ -238,7 +258,7 @@ function validate() {
 }
 
 async function submit() {
-  if (saving.value || !stationOptions.value?.length) return
+  if (saving.value || !canCreate.value || !stationOptions.value?.length) return
   submitError.value = ''
   fieldsToValidate.value = Object.keys(validate())
   const first = fieldsToValidate.value[0]
@@ -285,6 +305,11 @@ async function submit() {
     <view v-if="auth.staff" class="shipper-content">
       <text class="shipper-copy">请从发货入口进入 Web TMS 开单。</text>
     </view>
+    <view v-else-if="canCreate === false" class="shipper-content">
+      <MobileEmptyState class="shipper-card" icon="waybill" title="当前账号可查询订单"
+        description="提交发货委托请联系服务商配置开单归属人。已有订单、回单与对账仍可查看。" />
+    </view>
+    <TmsPageSkeleton v-else-if="canCreate === null" label="正在检查发货权限…" :error="accessError" @retry="loadPage" />
     <TmsPageSkeleton v-else-if="!stationOptions" label="正在加载可用站点…" :error="optionsError" @retry="loadOptions" />
     <view v-else-if="!stationOptions.length" class="shipper-content">
       <MobileEmptyState class="shipper-card" icon="location" title="暂无可用站点"
@@ -316,8 +341,6 @@ async function submit() {
             <MobileSelect
               v-model="stationIds[side.id]" :field="`${side.id}-station`" :options="stationOptions"
               :label="`${side.label}站点`" placeholder="选择站点…" :disabled="saving"
-              :invalid="Boolean(errors[`${side.id}-station`])"
-              :described-by="errors[`${side.id}-station`] ? `${side.id}-station-error` : undefined"
             />
           </MobileField>
           <view class="shipment-fields">
@@ -413,7 +436,7 @@ async function submit() {
         </MobileAction>
       </view>
     </view>
-    <view v-if="!auth.staff && stationOptions?.length" class="mobile-dock mobile-dock--sticky" aria-label="发货委托操作">
+    <view v-if="!auth.staff && canCreate && stationOptions?.length" class="mobile-dock mobile-dock--sticky" aria-label="发货委托操作">
       <text v-if="submitError" id="submit-error" class="mobile-dock__note mobile-dock__note--error" role="alert">{{ submitError }}</text>
       <MobileAction class="tms-primary-action mobile-dock__action" :aria-busy="saving" :disabled="saving" @click="submit">
         {{ saving ? '正在提交…' : '提交发货委托' }}
@@ -433,6 +456,7 @@ async function submit() {
 </template>
 
 <style scoped lang="scss">
+@use '@mobile-core/styles/form';
 .shipment-form { gap: 20px; padding-bottom: 24px; }
 .shipment-recovery {
   --mobile-inline-pair-gap: 8px;
@@ -461,8 +485,8 @@ async function submit() {
 .shipment-section,
 .shipment-cargo { display: grid; min-width: 0; gap: 16px; }
 .shipment-count { font-variant-numeric: tabular-nums; }
-.shipment-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
-.shipment-quantity { grid-column: span 2; }
+.shipment-fields { @include form.field-grid; }
+.shipment-quantity { grid-column: 1 / -1; }
 
 .shipment-cargo + .shipment-cargo { padding-top: 16px; border-top: 1px solid var(--mobile-workspace-line); }
 .shipment-cargo__header { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
@@ -477,7 +501,7 @@ async function submit() {
 .shipment-remove { min-width: 44px; color: var(--tms-red-strong); }
 
 @media (min-width: 420px) {
-  .shipment-fields--measurements { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .shipment-fields--measurements { @include form.field-grid($columns: 3, $min-width: 110px); }
   .shipment-quantity { grid-column: auto; }
 }
 

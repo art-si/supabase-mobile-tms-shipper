@@ -1,0 +1,1 @@
+import{Et as t,J as o,Xt as r}from"./index-D-WfG5dh.js";function n(n,s){const e=t();if(!e)return;const i=e.appContext.config.globalProperties;r(()=>{const t=i.$route;return t?.path===n?t.query:void 0},(t,r)=>{if(!t||!r)return;const n=o();Object.is(n[n.length-1],e.proxy)&&s(t)},{flush:"post"})}export{n as t};

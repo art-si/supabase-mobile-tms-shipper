@@ -29,10 +29,10 @@ const metrics = computed(() => {
   const counts = data.value?.counts
   if (!counts) return []
   return [
-    { key: 'pending', label: '待发运', value: counts.pending },
-    { key: 'in_progress', label: '履约中', value: counts.in_progress },
-    { key: 'signed', label: '已签收', value: counts.signed }
-  ] satisfies { key: OrderGroup; label: string; value: number }[]
+    { key: 'pending', label: '待发运', value: counts.pending, unit: '单' },
+    { key: 'in_progress', label: '履约中', value: counts.in_progress, unit: '单' },
+    { key: 'signed', label: '已签收', value: counts.signed, unit: '单' }
+  ] satisfies { key: OrderGroup; label: string; value: number; unit: string }[]
 })
 
 function selectMetric(index: number) {
@@ -75,9 +75,12 @@ onPullDownRefresh(async () => { await refresh(); uni.stopPullDownRefresh() })
       <template v-else-if="data">
         <view class="mobile-group">
           <view class="home-next">
-            <MobileSectionHeading title="发货委托" description="填写货物与收发信息，跟踪运输进度。" />
-            <TmsAction class="tms-primary-action" @click="openShipmentForm">
+            <MobileSectionHeading :title="data.profile.canCreate ? '发货委托' : '订单查询'" :description="data.profile.canCreate ? '填写货物与收发信息，跟踪运输进度。' : '查看本企业订单、回单与对账。发货权限请联系服务商开通。'" />
+            <TmsAction v-if="data.profile.canCreate" class="tms-primary-action" @click="openShipmentForm">
               <MobileInlineLabel icon="add" label="我要发货" />
+            </TmsAction>
+            <TmsAction v-else class="tms-primary-action" @click="openOrders()">
+              <MobileInlineLabel icon="waybill" label="查看我的订单" />
             </TmsAction>
           </view>
           <view class="home-overview home-secondary">

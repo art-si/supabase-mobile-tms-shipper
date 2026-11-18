@@ -15,9 +15,11 @@ export const demoEnabled = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DE
 const errorMessages: Record<string, string> = {
   invalid_credentials: '手机号、邮箱或密码不正确。',
   invalid_account: '请输入有效的手机号或邮箱。',
+  AMBIGUOUS_ACCOUNT: '该手机号对应多个账号，请使用邮箱登录。',
   email_not_confirmed: '请验证邮箱后再登录。',
   phone_not_confirmed: '请验证手机号后再登录。',
   SHIPPER_NOT_BOUND: '此账号尚未开通货主服务，请联系物流服务商。',
+  SHIPPER_READ_ONLY: '当前账号可以查单；提交发货委托请联系服务商开通。',
   SHIPPER_ORDER_NOT_FOUND: '找不到这张订单，请返回订单列表。',
   SHIPPER_RECORD_NOT_FOUND: '此记录已变更或不可查看。',
   SHIPPER_ORDER_INPUT: '请核对站点、收发货信息和货物数量。',
@@ -93,7 +95,7 @@ export async function loginWithPassword(identifier: string, password: string) {
   } catch (error) {
     if (!(error instanceof ApiError) || !['invalid_credentials', 'phone_provider_disabled'].includes(error.code)) throw error
     // Existing Web TMS accounts may store the phone in their business profile.
-    const result = await request<{ session: Session }>('/functions/v1/login-with-phone', { phone: account.local, password }, KEY)
+    const result = await request<{ session: Session }>('/functions/v1/login-with-phone', { app: 'shipper', phone: account.local, password }, KEY)
     if (!result?.session?.access_token) throw new ApiError(502, 'INVALID_LOGIN_SESSION', '登录服务暂时不可用，请稍后重试。')
     return result.session
   }

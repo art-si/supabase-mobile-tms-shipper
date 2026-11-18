@@ -13,6 +13,7 @@ import MobileIcon from '@mobile-core/components/MobileIcon.vue'
 import MobileSearch from '@mobile-core/components/MobileSearch.vue'
 import MobileSegmented from '@mobile-core/components/MobileSegmented.vue'
 import { formatCnyAmount } from '@mobile-core/money'
+import { revealControl } from '@mobile-core/form-focus'
 import TmsPageSkeleton from '@mobile-core/components/TmsPageSkeleton.vue'
 import MobileTopBar from '@mobile-core/components/MobileTopBar.vue'
 
@@ -76,12 +77,17 @@ function choose(row: ReconciliationDriver) {
   driver.value = row
   const first = visibleCategories.value[0]
   if (first) loadCategory(first.key)
+  void revealControl('ledger-current-driver')
 }
 
 function clearDriver() {
+  const id = driver.value?.id
   driver.value = undefined
   ledger.reset()
+  if (id) void revealControl(driverRowId(id))
 }
+
+function driverRowId(id: string) { return `ledger-driver-${id}` }
 
 async function confirmBack() {
   if (!driver.value) return true
@@ -124,7 +130,7 @@ function paginate(step: -1 | 1) {
         </view>
         <TmsPageSkeleton v-if="drivers.busy.value || drivers.error.value" :error="drivers.error.value" @retry="drivers.load" />
         <view v-else-if="drivers.data.value?.records.length" class="mobile-group">
-          <MobileAction v-for="row in drivers.data.value.records" :key="row.id" class="mobile-row" @click="choose(row)">
+          <MobileAction v-for="row in drivers.data.value.records" :id="driverRowId(row.id)" :key="row.id" class="mobile-row" @click="choose(row)">
             <view class="mobile-row__icon"><MobileIcon name="user" size="17px" /></view>
             <text class="mobile-row__body mobile-row__label">{{ row.driver_name || '未命名司机' }}</text>
             <MobileIcon class="mobile-row__chevron" name="chevron" size="14px" />
@@ -138,7 +144,10 @@ function paginate(step: -1 | 1) {
       </template>
       <template v-else>
         <view class="mobile-group">
-          <view class="mobile-row mobile-row--static">
+          <view
+            id="ledger-current-driver" class="mobile-row mobile-row--static" role="group" tabindex="-1"
+            :aria-label="`当前司机：${driver.driver_name || '未命名司机'}`"
+          >
             <view class="mobile-row__icon"><MobileIcon name="user" size="17px" /></view>
             <view class="mobile-row__body">
               <text class="mobile-row__detail">当前司机</text>

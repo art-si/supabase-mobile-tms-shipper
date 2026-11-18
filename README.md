@@ -41,30 +41,18 @@ H5 浏览器回归可在 dev server 运行后执行 `pnpm audit:h5`。默认检�
 
 ## 接入现有 TMS
 
-1. 在已安装 Art Supabase TMS 的数据库执行 [货主端迁移](supabase/migrations/20261115002155_tms_shipper_mobile.sql)。它复用现有订单、配载明细、运单、编号规则，并建立货主账号绑定。通过 TMS 的迁移流程或 Supabase SQL Editor 应用此脚本。
+1. 当前 Supabase 项目已配置货主端数据库接口。数据库变更由 Art Supabase Pro 统一维护和直接校验，不在移动仓保留逐版本 SQL。复用现有订单、配载明细、运单和编号规则。
 2. 发布 Edge Function。函数使用项目内置的 Auth 和 service-role 环境变量。
 
    ```powershell
    supabase functions deploy tms-shipper --project-ref <project-ref>
    ```
 
-3. 在 Supabase Auth 开通独立的货主账号，用邮箱和密码登录。若项目启用了手机号认证，已绑定验证手机号的货主也可用手机号和密码登录。用货主的 Auth UID 绑定 `mdm_customer.id` 和对应服务商租户。提交委托还需配置同租户可用的开单归属人 `sys_user.id`，并启用 `tms.order` 自动编号。没有开单归属人的绑定可以查单。
-
-   ```sql
-   insert into tms_shipper_private.accounts (
-     auth_user_id, tenant_id, customer_id, order_actor_id, display_name
-   ) values (
-     '<货主 Auth UID>'::uuid,
-     '<服务商租户 ID>'::uuid,
-     '<发货客户 ID>'::uuid,
-     '<开单归属人 ID>'::uuid,
-     '<货主姓名>'
-   );
-   ```
+3. 在后台「用户管理 → 移动端账号 → 新建货主账号」为每位客户联系人开通个人账号，关联客户企业和可选的开单归属人。支持邮箱密码及后台登记的登录手机号密码；微信手机号另由本人授权绑定。没有开单归属人的账号显示只读状态，可查单，不能发货。启用 `tms.order` 自动编号后才可提交委托。已有账号不能更换客户企业，换企业需新建个人账号。
 
 4. 复制 `.env.example` 为 `.env.local`。填写 `VITE_SUPABASE_URL` 和该项目的 `VITE_SUPABASE_KEY`（publishable key 或旧版 anon key）。小程序需要代理时填 `VITE_SUPABASE_MP_URL`，代理应提供 `/auth/v1`、`/rest/v1`、`/functions/v1` 和 `/storage/v1`。
 5. 为员工操作配置 `VITE_TMS_WEB_URL`，填 Art Supabase Pro 的完整部署根地址，保留子目录路径。微信小程序还需将 Web TMS 域名登记为 `web-view` 业务域名。Web 工作台沿用独立登录会话及现有角色、按钮权限。已在 Web TMS 用户资料登记手机号的员工可通过 `login-with-phone` 登录员工工作台，货主绑定使用独立的 Auth UID。
-6. 微信小程序的「手机一键登录」默认关闭。使用货主端自己的微信 AppID，开通获取手机号能力，并在同一个 Supabase 项目完成主仓 `mobile-wechat-auth` 和货主服务的部署后，才把 `VITE_ENABLE_WECHAT_PHONE_LOGIN` 设为 `true`。货主和员工先凭账号密码登录，再于 10 分钟内从「我的」授权绑定微信手机号。之后可使用一键登录，每次仍需通过货主绑定或员工权限检查。H5 和未启用的构建继续使用账号密码登录。
+6. 微信小程序的「手机一键登录」通过 `VITE_ENABLE_WECHAT_PHONE_LOGIN=true` 开启。统一服务 `mobile-wechat-auth` 由 Art Supabase Pro 部署。当前验收共用司机 AppID 和服务端凭据，独立凭据配置完整后可切换。先凭密码登录，10 分钟内在「我的」授权绑定；以后可一键登录，每次检查当前客户或员工权限。配置和接口约定见主仓 `supabase/README.md`。H5 使用账号密码。
 
 ## 业务规则
 

@@ -6,6 +6,7 @@ import type {
 import { orderGroup } from '@/utils/orders'
 
 const profile: ShipperProfile = {
+  canCreate: true,
   displayName: '陈经理',
   customerName: '杭州澄远商贸',
   tenantName: '亿企工场物流'

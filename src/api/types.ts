@@ -25,6 +25,7 @@ export interface ShipperProfile {
   displayName: string
   customerName: string
   tenantName: string
+  canCreate: boolean
 }
 
 export interface Station {

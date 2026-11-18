@@ -5,7 +5,7 @@ import {
   createOrder, deleteItem, fetchDashboard, fetchOrder, fetchOrders, fetchSavedItems, fetchShipperProfile,
   fetchStatement, fetchStatementsPage, fetchStations, fetchUpdates, readUpdate, saveItem
 } from '@/api/shipper'
-import { userMessage } from '@/api/supabase'
+import { ApiError, userMessage } from '@/api/supabase'
 import type { CustomerStatementCursor, OrderCreated, OrderQuery, SavedItemInput, SavedItemKind, ShipmentDraft } from '@/api/types'
 import { useAuthStore } from '@/stores/auth'
 
@@ -43,6 +43,9 @@ export function useShipper() {
     statement: (id: string) => auth.demo ? demoApi.statement(id) : auth.authenticated((token) => fetchStatement(token, id)),
     create: async (requestId: string, draft: ShipmentDraft) => {
       const owner = shipmentOwner.value
+      if (!auth.demo && !(await auth.authenticated(fetchShipperProfile)).canCreate) {
+        throw new ApiError(403, 'SHIPPER_READ_ONLY')
+      }
       const result = auth.demo
         ? await demoApi.create(requestId, draft)
         : await auth.authenticated((token) => createOrder(token, requestId, draft))
